@@ -1,2 +1,2 @@
 # sportclips
-Sportclips payroll automation website built using the Django Framework.
+Sportclips payroll automation website built using Python and the Django Framework.
