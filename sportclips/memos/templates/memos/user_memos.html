@@ -1,0 +1,50 @@
+{% extends "users/base.html" %}
+{% block content %}
+
+<!--Page Header Title-->
+<div style="text-align: center">
+    <h3 class="h-primary center">
+        Memos by {{ view.kwargs.username }} ({{ page_obj.paginator.count }})
+    </h3>
+</div>
+
+{% for memo in memos %}
+
+<article class="media content-section">
+    <img class="rounded-circle article-img" src="{{ memo.author.profile.image.url }}">
+    <div class="media-body">
+        <div class="article-metadata">
+            <a class="article-content" href="{% url 'user-memos' memo.author.username %}">{{ memo.author }}</a>
+            <a class="article-content text-muted">{{ memo.date_time|date:"F d, Y" }}</a>
+        </div>
+        <h2>
+            <a class="article-title" href="{% url 'memos-detail' memo.id %}">{{ memo.title }}</a>
+        </h2>
+        <p class="article-content">{{ memo.content }}</p>
+        <small>
+            <a class="text-muted" href="{% url 'memos-detail' pk=memo.pk %}">Comments: {{ memo.comments.count }}</a>
+        </small>
+    </div>
+</article>
+
+{% endfor %}
+
+<!--Pagination-->
+{% if is_paginated %}
+{% if page_obj.has_previous %}
+<a class="btn btn-primary btn-sm mb-4" href="?page=1">First</a>
+<a class="btn btn-primary btn-sm mb-4" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+{% endif %}
+{% for num in page_obj.paginator.page_range %}
+{% if page_obj.number == num %}
+<a class="btn btn-primary active btn-sm mb-4" href="?page={{ num }}">{{ num }}</a>
+{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+<a class="btn btn-primary active btn-sm mb-4" href="?page={{ num }}">{{ num }}</a>
+{% endif %}
+{% endfor %}
+{% if page_obj.has_next %}
+<a class="btn btn-primary btn-inactive btn-sm mb-4" href="?page={{ page_obj.next_page_number }}">Next</a>
+<a class="btn btn-primary btn-inactive btn-sm mb-4" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+{% endif %}
+{% endif %}
+{% endblock content %}

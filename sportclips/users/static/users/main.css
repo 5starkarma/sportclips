@@ -1,0 +1,172 @@
+/* Push body down below header */
+body {
+  background: url("/users/static/background/pic1.jpg");
+  background-size: contain;
+  color: #000000;
+  margin-top: 5rem;
+}
+
+/*Video background settings*/
+#video-background {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  z-index: -100;
+}
+
+/*Headers*/
+h1, h2, h3, h4, h5, h6 {
+  color: #ffffff;
+}
+
+/*Primary headers e.g. Page titles*/
+.h-primary {
+    font-weight: 500;
+    line-height: 1.2;
+    text-transform: uppercase;
+    text-align: center;
+    background-color: transparent;
+    padding: 25px 0 25px 0;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    border-bottom: 5px solid #ff0000;
+    display: inline-block;
+    color: #000000;
+}
+
+/*List settings*/
+ul {
+  margin: 0;
+}
+
+/*Header menu settings*/
+.bg-steel {
+  background-color: #0a0902;
+  border-bottom: 1px solid #666666;
+}
+
+.site-header .navbar-nav .nav-link {
+  color: #cbd5db;
+}
+
+.site-header .navbar-nav .nav-link:hover {
+  color: #ffc107;
+}
+
+.site-header .navbar-nav .nav-link.active {
+  font-weight: 500;
+}
+
+/*Account page Menu bar*/
+.account-container{
+  color: #ffffff;
+  background: #212529;
+  padding: 10px 20px;
+  border: 1px solid #666666;
+  border-radius: 3px;
+  margin-bottom: 20px;
+  overflow: auto;
+  text-align: center;
+}
+
+.account-menu{
+
+}
+
+/*Article settings*/
+.article-title {
+  font-family: 'Roboto', sans-serif;
+  font-size: 18px;
+  color: #fab041;
+}
+
+a.article-title:hover {
+  color: #428bca;
+  text-decoration: none;
+}
+
+.article-content {
+  white-space: pre-line;
+  color: #ffffff;
+}
+
+.article-img {
+  height: 65px;
+  width: 65px;
+  margin-right: 16px;
+}
+
+.article-metadata {
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #666666
+}
+
+.article-metadata a:hover {
+  color: #333;
+  text-decoration: none;
+}
+
+.article-svg {
+  width: 25px;
+  height: 25px;
+  vertical-align: middle;
+}
+
+.account-menu {
+  color: #ffffff;
+  background: #212529;
+  padding: 0px 15px;
+  border: 1px solid #666666;
+  border-radius: 3px;
+  margin-bottom: 10px;
+  overflow: auto;
+}
+
+/*User Account Settings*/
+.account-img {
+  height: 125px;
+  width: 125px;
+  margin-right: 20px;
+  margin-bottom: 16px;
+}
+
+.account-heading {
+  font-size: 2.5rem;
+}
+
+.btn-white{
+    color: #cbd5db;
+}
+
+.btn-white:hover{
+    color: #ffc107;
+}
+
+/*Page content settings*/
+.content-section {
+  color: #ffffff;
+  background: #212529;
+  padding: 15px 20px;
+  border: 1px solid #666666;
+  border-radius: 3px;
+  margin-bottom: 10px;
+  overflow: auto;
+}
+
+.list-group-item-light {
+  color: #32383e;
+  background-color: #32383e;
+}
+
+small.article-content{
+    font-size: 70%;
+}
+
+media-body{
+    vertical-align:middle
+}

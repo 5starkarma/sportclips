@@ -1,0 +1,33 @@
+{% extends 'users/base.html' %}
+{% block content %}
+
+<!--Page Header Title-->
+
+<div style="text-align: center">
+    <h3 class="h-primary center">Account
+    </h3>
+</div>
+
+<!--Content Header-->
+
+<div class="content-section">
+    <div class="media">
+        <img class="rounded-circle account-img" src={{ user.profile.image.url }}>
+        <div class="media-body">
+            <h2 class="account-heading">{{ user.username }}</h2>
+            <p class="text-secondary">{{ user.email }} | {{ user.phone }}</p>
+            <a class="btn btn-primary btn-sm"
+               href="{% url 'profile' %}">Update Profile</a>
+        </div>
+    </div>
+</div>
+<div class="account-menu">
+    <div style="text-align: center">
+        <a class="btn btn-basic btn-white btn-sm" href="#">Notifications</a>
+        <a class="btn btn-basic btn-white btn-sm" href="#">My Memos</a>
+        <a class="btn btn-basic btn-white btn-sm" href="#">My Tests</a>
+        <a class="btn btn-basic btn-white btn-sm" href="#">My Videos</a>
+    </div>
+</div>
+
+{% endblock %}
