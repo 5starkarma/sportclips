@@ -42,6 +42,9 @@ INSTALLED_APPS = [
     # User installed apps
     'memos.apps.MemosConfig',
     'users.apps.UsersConfig',
+    'payroll.apps.PayrollConfig',
+
+    # Third party apps
     'crispy_forms',
 ]
 
