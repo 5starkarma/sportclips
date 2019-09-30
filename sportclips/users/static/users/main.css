@@ -1,7 +1,7 @@
 /* Push body down below header */
 body {
   background: url("/users/static/background/pic1.jpg");
-  background-size: contain;
+  background-size: auto;
   color: #000000;
   margin-top: 5rem;
 }

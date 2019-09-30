@@ -1,0 +1,10 @@
+Payroll
+
+Input - Files / settings:
+Model that uploads files
+
+Process - Run payroll
+Helper function to split the files into names
+
+
+Output - Excel sheet

@@ -1,0 +1,25 @@
+{% extends "users/base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+
+<!--Payroll Heading-->
+<div class="container">
+    <div class="content-section">
+        <h6 class="application-heading">Upload Tips By Employee Report</h6>
+        <div class="article-content">Please upload the Tip by Employee Report below.
+        </div>
+    </div>
+</div>
+
+<!--Upload Section-->
+<div class="container">
+    <div class="content-section">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ upload_form|crispy }}
+            <button class="btn btn-primary" type="submit">Continue</button>
+        </form>
+    </div>
+</div>
+
+{% endblock content %}

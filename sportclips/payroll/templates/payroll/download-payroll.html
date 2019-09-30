@@ -1,0 +1,15 @@
+{% extends "users/base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+
+<!--Payroll Heading-->
+
+<article class="media content-section">
+    <div class="media-body">
+        <h6 class="application-heading">Payroll</h6>
+        <p class="article-content">Payroll is complete</p>
+        <a class="btn btn-basic" href="{% url 'memos-memos' %}">Return to Blog</a>
+    </div>
+</article>
+
+{% endblock content %}

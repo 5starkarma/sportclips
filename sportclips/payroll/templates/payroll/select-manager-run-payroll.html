@@ -1,0 +1,27 @@
+{% extends "users/base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+
+<!--Payroll Heading-->
+<article class="media content-section">
+    <div class="media-body">
+        <h6 class="application-heading">Select Manager</h6>
+        <div class="article-content">Please select the manager of the store.
+        </div>
+    </div>
+</article>
+
+<!--Upload Section-->
+<article class="media content-section">
+    <div class="media-body">
+        <h6 class="application-heading">Select Manager</h6>
+            <form method="post" class="post-form">
+                {% csrf_token %}
+                {{ m_form|crispy }}
+                <button type="submit" class="save btn btn-success">Run Payroll</button>
+                <a class="btn btn-default float-right" href="{% url 'memos-memos' %}">Return Home</a>
+            </form>
+    </div>
+</article>
+
+{% endblock content %}
