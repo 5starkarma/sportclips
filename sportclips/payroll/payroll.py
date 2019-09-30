@@ -17,49 +17,18 @@ def get_employee_names(test):
     return [(name, name) for name in employee_names]
 
 
-@login_required
-def run_payroll(request, man_name):
-    # get current logged in user
-    current_user = str(request.user)
-    print(current_user)
-    # check if file names of uploaded files are correct
-    names = ['media/'+current_user+'/Stylist_Analysis.xls',
-             'media/'+current_user+'/Tips_By_Employee_Report.xls',
-             'media/'+current_user+'/Employee_Hours1.xls',
-             'media/'+current_user+'/Employee_Hours2.xls',
-             'media/'+current_user+'/SC_Client_Retention_Report.xls',
-             'media/'+current_user+'/Employee_Service_Efficiency_SC.xls']
-    for name in names:
-        if not os.path.isfile(name):
-            return redirect('filename-error')
+def read_excel_files(filenames):
+    df_stylist_analysis = pd.read_excel(filenames[0], sheet_name=0, header=None, skiprows=4)
+    df_tips = pd.read_excel(filenames[1], sheet_name=0, header=None, skiprows=0)
+    df_hours1 = pd.read_excel(filenames[2], header=None, skiprows=5)
+    df_hours2 = pd.read_excel(filenames[3], header=None, skiprows=5)
+    df_retention = pd.read_excel(filenames[4], sheet_name=0, header=None, skiprows=8)
+    df_efficiency = pd.read_excel(filenames[5], sheet_name=0, header=None, skiprows=5)
+    return df_stylist_analysis, df_tips, df_hours1, df_hours2, df_retention, df_efficiency
 
-    # place uploaded files into variables
-    sar = 'media/'+current_user+'/Stylist_Analysis.xls'
-    sar2 = 'media/'+current_user+'/Stylist_Analysis.xls'
-    tips = 'media/'+current_user+'/Tips_By_Employee_Report.xls'
-    hours_wk1 = 'media/'+current_user+'/Employee_Hours1.xls'
-    hours_wk2 = 'media/'+current_user+'/Employee_Hours2.xls'
-    retention = 'media/'+current_user+'/SC_Client_Retention_Report.xls'
-    efficiency = 'media/'+current_user+'/Employee_Service_Efficiency_SC.xls'
-    print('begin payroll now')
 
-    # begin processing payroll
-    df_sar = pd.read_excel(
-        sar, sheet_name=0, header=None, skiprows=4)
-    df_sar2 = pd.read_excel(
-        sar2, sheet_name=0, header=None, skiprows=4)
-    df_tips = pd.read_excel(
-        tips, sheet_name=0, header=None, skiprows=0)
-    df_hours1 = pd.read_excel(
-        hours_wk1, header=None, skiprows=5)
-    df_hours2 = pd.read_excel(
-        hours_wk2, header=None, skiprows=5)
-    df_retention = pd.read_excel(
-        retention, sheet_name=0, header=None, skiprows=8)
-    df_efficiency = pd.read_excel(
-        efficiency, sheet_name=0, header=None, skiprows=5)
-
-    df_sar.rename(
+def prepare_stylist_analysis(df_stylist_analysis):
+    df_stylist_analysis.rename(
         columns={0: 'Store', 1: 'First', 2: 'Last', 3: 'Service Clients',
                  4: 'Percent Request', 5: 'Neck Trims',
                  6: 'Take Home Only Clients', 7: 'Total Clients',
@@ -70,69 +39,34 @@ def run_payroll(request, man_name):
                  18: 'Number of MVPs', 19: 'Paid MVP Percent',
                  20: 'Number of Paid Triple Plays',
                  21: 'Paid Triple Play Percent',
-                 22: 'Paid BB Percent', 23: '1New Client BB',
+                 22: 'Paid BB Percent', 23: '# New Client BB',
                  24: 'New Client BB', 25: 'Number of New Clients',
                  26: 'Percent New Clients', 27: 'Number of Kids',
                  28: 'Percent Kids'}, inplace=True)
-    df_sar['Employee'] = df_sar['First'].astype(str) + ' ' + df_sar['Last']
-    df_sar['Employee'] = df_sar['Employee'].str.lower()
-    df_sar['Paid BB Percent'] = df_sar['Paid BB Percent'].astype('float')
+    df_stylist_analysis['Employee'] = df_stylist_analysis['First'].astype(str) + ' ' + df_stylist_analysis['Last']
+    df_stylist_analysis['Employee'] = df_stylist_analysis['Employee'].str.lower()
+    df_stylist_analysis['Paid BB Percent'] = df_stylist_analysis['Paid BB Percent'].astype('float') / 100
+    df_stylist_analysis_short = df_stylist_analysis.loc[:, ['Store', 'Employee',
+                                                            'Total Clients', 'Clients Per Hour',
+                                                            'Service Sales', 'Take Home Sales',
+                                                            'Take Home Per Client', 'Service Sales Per Hour',
+                                                            'Paid BB Percent', 'New Client BB']]
+    return df_stylist_analysis, df_stylist_analysis_short
 
-    df_sar.rename(
-        columns={0: 'Store', 1: 'First', 2: 'Last', 3: 'Service Clients',
-                 4: 'Percent Request', 5: 'Neck Trims',
-                 6: 'Take Home Only Clients', 7: 'Total Clients',
-                 8: 'Service Sales', 9: 'Take Home Sales',
-                 10: 'Net Sales', 11: 'Total Hours', 12: 'Store Hours',
-                 13: 'Non-Store Hours', 14: 'Take Home Per Client',
-                 15: 'Total Avg Ticket', 16: 'Service Sales Per Hour',
-                 17: 'Clients Per Hour', 18: 'Number of MVPs',
-                 19: 'Paid MVP Percent', 20: 'Number of Paid Triple Plays',
-                 21: 'Paid Triple Play Percent', 22: 'Paid BB Percent',
-                 23: '1New Client BB', 24: 'New Client BB',
-                 25: 'Number of New Clients', 26: 'Percent New Clients',
-                 27: 'Number of Kids', 28: 'Percent Kids'}, inplace=True)
 
-    df_sar['Employee'] = df_sar['First'].astype(str) + ' ' + df_sar['Last']
-    df_sar['Employee'] = df_sar['Employee'].str.lower()
-    df_sar['Paid BB Percent'] = df_sar['Paid BB Percent'].astype('float') / 100
-
-    df_sar1 = df_sar.loc[:, ['Store', 'Employee',
-                             'Total Clients', 'Clients Per Hour',
-                             'Service Sales', 'Take Home Sales',
-                             'Take Home Per Client', 'Service Sales Per Hour',
-                             'Paid BB Percent', 'New Client BB']]
-
-    df_sar.rename(
-        columns={0: 'Store', 1: 'First', 2: 'Last', 3: 'Service Clients',
-                 4: 'Percent Request', 5: 'Neck Trims',
-                 6: 'Take Home Only Clients', 7: 'Total Clients',
-                 8: 'Service Sales', 9: 'Take Home Sales', 10: 'Net Sales',
-                 11: 'Total Hours', 12: 'Store Hours', 13: 'Non-Store Hours',
-                 14: 'Take Home Per Client', 15: 'Total Avg Ticket',
-                 16: 'Service Sales Per Hour', 17: 'Clients Per Hour',
-                 18: 'Number of MVPs', 19: 'Paid MVP Percent',
-                 20: 'Number of Paid Triple Plays',
-                 21: 'Paid Triple Play Percent',
-                 22: 'Paid BB Percent', 23: '1New Client BB',
-                 24: 'New Client BB', 25: 'Number of New Clients',
-                 26: 'Percent New Clients', 27: 'Number of Kids',
-                 28: 'Percent Kids'}, inplace=True)
-    df_sar['Employee'] = df_sar['First'].astype(str) + ' ' + df_sar['Last']
-    df_sar['Employee'] = df_sar['Employee'].str.lower()
-    df_sar['Paid BB Percent'] = df_sar['Paid BB Percent'].astype('float')
-
+def prepare_all_employees_df(df_tips, df_stylist_analysis_short):
     df_tips['Pay Period'] = df_tips.loc[1, 1]
     df_tips.rename(columns={0: 'Employee', 3: 'Credit Tips'}, inplace=True)
     df_tips = df_tips.drop(df_tips.index[:6])
     df_tips = df_tips.loc[:, ['Employee', 'Credit Tips', 'Pay Period']]
     df_tips['Employee'] = df_tips['Employee'].str.lower()
+    df_pay_period = df_tips.iloc[0, 2]
+    df_all_employees = pd.merge(df_stylist_analysis_short, df_tips, how='left', on='Employee').fillna(0)
+    df_all_employees['Pay Period'] = df_pay_period
+    return df_all_employees
 
-    df_pp = df_tips.iloc[0, 2]
 
-    df_all_employees = pd.merge(df_sar1, df_tips, how='left', on='Employee').fillna(0)
-    df_all_employees['Pay Period'] = df_pp
-
+def prepare_df_hours(df_hours1, df_hours2, df_all_employees):
     df_hours1[0] = df_hours1[0].str.lower()
     df_hours1.rename(columns={0: 'Employee', 1: 'Date', 5: 'Hours1'}, inplace=True)
     df_hours1 = df_hours1.loc[:, ['Employee', 'Date', 'Hours1']]
@@ -202,7 +136,6 @@ def run_payroll(request, man_name):
         (df_hours2_003[['Hours2']].div(resolution)).round().mul(resolution))
     df_hours2_003['OT2'] = (
         (df_hours2_003[['OT2']].div(resolution)).round().mul(resolution))
-
     df_all_employees = pd.merge(
         df_all_employees,
         df_hours1_003,
@@ -218,14 +151,17 @@ def run_payroll(request, man_name):
     df_all_employees['Total Hours'] = (
             df_all_employees['Hours1'] +
             df_all_employees['Hours2'])
+    return df_all_employees
 
+
+def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
     df_all_employees['Service Sales Min Qualifier'] = 40.0
 
     df_all_employees['Service Bonus'] = (
             (df_all_employees['Service Sales Per Hour'] -
              df_all_employees['Service Sales Min Qualifier']) *
             (df_all_employees['Paid BB Percent'] *
-             df_sar['Store Hours']))
+             df_stylist_analysis['Store Hours']))
 
     df_all_employees['Service Bonus'] = np.where(
         (df_all_employees['Service Bonus']) > 150, 150,
@@ -336,6 +272,10 @@ def run_payroll(request, man_name):
     df_all_employees['Varsity Times'] = ''
     df_all_employees['MVP Times'] = ''
 
+    return df_all_employees, df_store
+
+
+def calculate_manager_bonuses(df_all_employees, man_name, df_store):
     df_manager = df_all_employees[df_all_employees['Employee'].str.contains(man_name)]
     df_manager['Service Breakpoint'] = 1870
     df_manager['Manager Service Diff'] = (
@@ -345,6 +285,7 @@ def run_payroll(request, man_name):
     df_manager['Service Bonus'] = (
             df_manager['Store BB Percent'] *
             df_manager['Manager Service Diff']).round(2)
+
     df_manager['Star Bonus'] = 0
     df_manager = df_manager[[
         'Store', 'Pay Period', 'Employee', 'Hours1', 'Hours2',
@@ -352,6 +293,7 @@ def run_payroll(request, man_name):
         'Other Hours/Training', 'Credit Tips', 'Other Pay',
         'Service Bonus', 'Take Home Bonus', 'Star Bonus',
         'Season Ticket Bonus', 'Star Level']]
+
     df_manager['Service Bonus'] = np.where(
         df_manager['Service Bonus'] > 300, 300,
         df_manager['Service Bonus'])
@@ -370,7 +312,10 @@ def run_payroll(request, man_name):
         df_store['Credit Tips'].sum(), '',
         df_store['Service Bonus'].sum(), df_store['Take Home Bonus'].sum(),
         df_store['Star Bonus'].sum(), '', '']
+    return df_store
 
+
+def prepare_one_on_one_sheet(df_all_employees, df_retention, df_efficiency):
     df_1on1 = df_all_employees[[
         'Store', 'Employee', 'Pay Period', 'Service Sales Per Hour',
         'Paid BB Percent', 'New Client BB', 'Clients Per Hour',
@@ -429,7 +374,10 @@ def run_payroll(request, man_name):
                            'Client Retention', 'Return Retention',
                            'Varsity Times', 'MVP Times'
                            ]]
+    return df_1on1_5, df_1on1
 
+
+def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
     li = len(df_1on1_5.index)
 
     # Create variables for dynamic sheet names
@@ -439,7 +387,7 @@ def run_payroll(request, man_name):
 
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     writer = pd.ExcelWriter(
-        'media/'+current_user+'/payroll.xlsx', engine='xlsxwriter')
+        'media/' + current_user + '/payroll.xlsx', engine='xlsxwriter')
 
     # Convert the data-frame to an XlsxWriter Excel object.
     df_store.to_excel(writer, index=False, sheet_name=sheet1)
@@ -499,9 +447,9 @@ def run_payroll(request, man_name):
         {'font_size': 40, 'bold': True})
 
     worksheet1.conditional_format("$A$1:$Q$%d" % number_rows,
-                                   {"type": "formula",
-                                    "criteria": '=INDIRECT("B"&ROW())="total salon"',
-                                    "format": store_total_format})
+                                  {"type": "formula",
+                                   "criteria": '=INDIRECT("B"&ROW())="total salon"',
+                                   "format": store_total_format})
 
     worksheet2.conditional_format(1, 3, li, 3, {
         'type': 'cell', 'criteria': 'less than',
@@ -583,3 +531,31 @@ def run_payroll(request, man_name):
 
     writer.save()
     workbook.close()
+
+
+@login_required
+def check_uploaded_files(request):
+    current_user = str(request.user)
+    reports = ['/Stylist_Analysis.xls', '/Tips_By_Employee_Report.xls',
+               '/Employee_Hours1.xls', '/Employee_Hours2.xls',
+               '/SC_Client_Retention_Report.xls',
+               '/Employee_Service_Efficiency_SC.xls']
+    filenames = []
+    for report in reports:
+        filenames.append('media/' + str(current_user) + str(report))
+    for file in filenames:
+        if not os.path.isfile(file):
+            return redirect('filename-error')
+    return filenames, current_user
+
+
+def run_payroll(request, man_name):
+    files, user = check_uploaded_files(request)
+    df_stylist_analysis, df_tips, df_hours1, df_hours2, df_retention, df_efficiency = read_excel_files(files)
+    df_processed_sar, df_processed_sar_short = prepare_stylist_analysis(df_stylist_analysis)
+    df_processed_all_employees = prepare_all_employees_df(df_tips, df_processed_sar_short)
+    df_employees_and_hours = prepare_df_hours(df_hours1, df_hours2, df_processed_all_employees)
+    df_employees_and_bonuses, df_store = calculate_stylist_bonuses(df_employees_and_hours, df_processed_sar)
+    df_processed_store = calculate_manager_bonuses(df_employees_and_bonuses, man_name, df_store)
+    df_processed_1on1, df_second_1on1 = prepare_one_on_one_sheet(df_employees_and_bonuses, df_retention, df_efficiency)
+    write_data_to_excel_file(df_processed_1on1, df_processed_store, df_second_1on1, user)

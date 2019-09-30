@@ -2,7 +2,7 @@ from django.urls import path, reverse_lazy
 from . import views as payroll_views
 
 urlpatterns = [
-    path('payroll/', payroll_views.begin_payroll,
+    path('payroll/', payroll_views.delete_old_files,
          name='payroll'),
     path('filename-error/', payroll_views.filename_error,
          name='filename-error'),
@@ -30,6 +30,6 @@ urlpatterns = [
         success_url=reverse_lazy('select_manager_run_payroll'),
         template_name='payroll/service-efficiency.html'),
          name='service-efficiency'),
-    path('select-manager-run-payroll/', payroll_views.get_manager_name,
+    path('select-manager-run-payroll/', payroll_views.process_payroll,
          name='select_manager_run_payroll'),
 ]
