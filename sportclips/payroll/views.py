@@ -39,6 +39,7 @@ def process_payroll(request):
                              current_user_username=request.user.username)
         if m_form.is_valid():
             man_name = m_form.cleaned_data['manager']
+            # run payroll
             run_payroll(request, man_name)
             file_path = 'media/' + str(user) + '/payroll.xlsx'
             if not os.path.isfile(file_path):

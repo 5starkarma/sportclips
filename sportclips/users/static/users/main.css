@@ -1,7 +1,7 @@
 /* Push body down below header */
 body {
   background: url("/users/static/background/pic1.jpg");
-  background-size: auto;
+  background-size: cover;
   color: #000000;
   margin-top: 5rem;
 }
@@ -150,7 +150,8 @@ a.article-title:hover {
 /*Page content settings*/
 .content-section {
   color: #ffffff;
-  background: #212529;
+  background: #000000;
+  opacity: 0.9;
   padding: 15px 20px;
   border: 1px solid #666666;
   border-radius: 3px;

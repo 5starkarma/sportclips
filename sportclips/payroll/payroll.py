@@ -14,6 +14,7 @@ def get_employee_names(test):
     df_employee_names['Employee'] = \
         df_employee_names['Employee'].str.lower()
     employee_names = df_employee_names.loc[:, 'Employee'].tolist()
+    employee_names.append('no manager')
     return [(name, name) for name in employee_names]
 
 
@@ -118,7 +119,8 @@ def prepare_df_hours(df_hours1, df_hours2, df_all_employees):
         (df_hours2_003['Hours2']) - 8,
         (df_hours2_003['OT2']))
 
-    df_hours2_003['Cum hours'] = df_hours2_003.groupby('Employee')['Hours2'].transform('cumsum')
+    df_hours2_003['Cum hours'] = df_hours2_003.groupby(
+        'Employee')['Hours2'].transform('cumsum')
 
     df_hours2_003['Week OT2'] = np.where(df_hours2_003['Cum hours'] - df_hours2_003['Hours2'] > 40,
                                          df_hours2_003['Hours2'],
@@ -136,17 +138,11 @@ def prepare_df_hours(df_hours1, df_hours2, df_all_employees):
         (df_hours2_003[['Hours2']].div(resolution)).round().mul(resolution))
     df_hours2_003['OT2'] = (
         (df_hours2_003[['OT2']].div(resolution)).round().mul(resolution))
-    df_all_employees = pd.merge(
-        df_all_employees,
-        df_hours1_003,
-        how='left',
-        on='Employee').fillna(0)
+    df_all_employees = pd.merge(df_all_employees, df_hours1_003,
+                                how='outer', on='Employee').fillna(0)
 
-    df_all_employees = pd.merge(
-        df_all_employees,
-        df_hours2_003,
-        how='left',
-        on='Employee').fillna(0)
+    df_all_employees = pd.merge(df_all_employees, df_hours2_003,
+                                how='outer', on='Employee').fillna(0)
 
     df_all_employees['Total Hours'] = (
             df_all_employees['Hours1'] +
@@ -277,6 +273,7 @@ def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
 
 def calculate_manager_bonuses(df_all_employees, man_name, df_store):
     df_manager = df_all_employees[df_all_employees['Employee'].str.contains(man_name)]
+    print(df_manager)
     df_manager['Service Breakpoint'] = 1870
     df_manager['Manager Service Diff'] = (
             df_manager['Service Sales'] -
@@ -291,8 +288,9 @@ def calculate_manager_bonuses(df_all_employees, man_name, df_store):
         'Store', 'Pay Period', 'Employee', 'Hours1', 'Hours2',
         'Total Hours', 'OT', 'Holiday', 'PTO Hours',
         'Other Hours/Training', 'Credit Tips', 'Other Pay',
-        'Service Bonus', 'Take Home Bonus', 'Star Bonus',
-        'Season Ticket Bonus', 'Star Level']]
+        'Service Bonus', 'Take Home Bonus',  'Take Home Per Client',
+        'Paid BB Percent', 'Star Bonus', 'Season Ticket Bonus',
+        'Star Level']]
 
     df_manager['Service Bonus'] = np.where(
         df_manager['Service Bonus'] > 300, 300,
@@ -300,6 +298,12 @@ def calculate_manager_bonuses(df_all_employees, man_name, df_store):
     df_manager['Service Bonus'] = np.where(
         df_manager['Service Bonus'] < 0, 0,
         df_manager['Service Bonus'])
+    df_manager['Service Bonus'] = np.where(
+        (df_manager['Paid BB Percent']) < 0.3, 0,
+        (df_manager['Service Bonus'])).round(2)
+    df_manager['Service Bonus'] = np.where(
+        (df_manager['Take Home Per Client']) < 1.00, 0,
+        (df_manager['Service Bonus'])).round(2)
 
     df_store.loc[df_store['Employee'] == man_name] = df_manager
     df_store = df_store[:-1]
@@ -332,9 +336,8 @@ def prepare_one_on_one_sheet(df_all_employees, df_retention, df_efficiency):
 
     df_retention2['Employee'] = df_retention2['Employee'].str.lower()
 
-    df_1on1_3 = df_1on1_2.merge(
-        df_retention2, how='left', left_on='Employee',
-        right_on='Employee').fillna(0)
+    df_1on1_3 = df_1on1_2.merge(df_retention2, how='outer', left_on='Employee',
+                                right_on='Employee').fillna(0)
 
     df_1on1_4 = df_1on1_3[[
         'Store', 'Employee', 'Pay Period', 'Service Sales Per Hour',
@@ -350,9 +353,8 @@ def prepare_one_on_one_sheet(df_all_employees, df_retention, df_efficiency):
 
     df_efficiency['Employee'] = df_efficiency['Employee'].str.lower()
 
-    df_1on1_5 = df_1on1_4.merge(
-        df_efficiency, how='left', left_on='Employee',
-        right_on='Employee').fillna(0)
+    df_1on1_5 = df_1on1_4.merge(df_efficiency, how='outer', left_on='Employee',
+                                right_on='Employee').fillna(0)
 
     df_1on1_5['New Client BB'] = (df_1on1_5['New Client BB'] / 100)
     df_1on1_5['Client Retention'] = (df_1on1_5['Client Retention'] / 100)
@@ -527,7 +529,6 @@ def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
     worksheet2.insert_chart((li + 1), 8, chart2, {'x_scale': .7, 'y_scale': 1.5})
     worksheet1.insert_image('O22', 'media/1.png')
     worksheet2.insert_image('J44', 'media/1.png')
-    print('save next')
 
     writer.save()
     workbook.close()
