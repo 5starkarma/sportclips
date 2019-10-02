@@ -9,13 +9,12 @@ from django.views.generic import (
     ListView, DetailView,
     CreateView, UpdateView,
     DeleteView)
-from users.models import User
 
+from users.models import User
 from .forms import CommentForm
 from .models import Memo
 
 
-# Memo home page view
 class MemoListView(LoginRequiredMixin, ListView):
     model = Memo
     template_name = 'memos/memos.html'
@@ -31,7 +30,6 @@ class MemoListView(LoginRequiredMixin, ListView):
         return context
 
 
-# Memo list view by user
 class UserMemoListView(LoginRequiredMixin, ListView):
     model = Memo
     template_name = 'memos/user_memos.html'
@@ -45,7 +43,6 @@ class UserMemoListView(LoginRequiredMixin, ListView):
         return Memo.objects.filter(author=user).order_by('-date_time')
 
 
-# Single memo 'detail' view
 class MemoDetailView(DetailView):
     model = Memo
 
@@ -57,7 +54,6 @@ class MemoDetailView(DetailView):
         return context
 
 
-# View to create a memo
 class MemoCreateView(LoginRequiredMixin, CreateView):
     model = Memo
     fields = ['title', 'content']
@@ -68,13 +64,11 @@ class MemoCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-# View to update memos
 class MemoUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Memo
     fields = ['title', 'content']
 
     def form_valid(self, form):
-        # set the author as logged in user
         form.instance.author = self.request.user
         return super().form_valid(form)
 
@@ -86,7 +80,6 @@ class MemoUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return False
 
 
-# View to delete memos
 class MemoDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Memo
     success_url = '/memos'
@@ -112,4 +105,5 @@ def add_comment_to_memo(request, pk):
             return redirect('memos-detail', pk=memo.pk)
     else:
         form = CommentForm()
-    return render(request, 'memos/add_comment_to_memo.html', {'form': form})
+    return render(
+        request, 'memos/add_comment_to_memo.html', {'form': form})
