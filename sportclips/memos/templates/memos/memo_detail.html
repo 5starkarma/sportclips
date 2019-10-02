@@ -1,5 +1,6 @@
 {% extends "users/base.html" %}
 {% block content %}
+{% load auth_extras %}
 
 <!--Memo Detail List-->
 
@@ -15,10 +16,12 @@
         <h2 class="article-title">{{ object.title }}</h2>
         <p class="article-content">{{ object.content }}</p>
         <div>
+            {% if request.user|is_in_group:"owner" %}
             <a class="btn btn-primary btn-sm mb-4"
                href="{% url 'memos-update' memo.id %}">Update</a>
             <a class="btn btn-danger btn-sm mb-4"
                href="{% url 'memos-delete' memo.id %}">Delete</a>
+            {% endif %}
             <a class="btn btn-primary btn-sm mb-4"
                href="{% url 'add-comment-to-memo' memo.id %}">Leave Comment</a>
             {% for comment in memo.comments.all %}
