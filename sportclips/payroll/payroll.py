@@ -337,6 +337,7 @@ def calculate_manager_bonuses(df_all_employees, man_name, df_store):
     manager_service_breakpoint = 1870
     manager_service_bonus_cap = 300
     manager_service_bonus_paid_bb_min = 0.3
+    manager_service_bonus_thpc_min = 1.00
 
     df_manager = df_all_employees[df_all_employees['Employee'].str.contains(man_name)]
     df_manager['Service Breakpoint'] = manager_service_breakpoint
@@ -369,7 +370,8 @@ def calculate_manager_bonuses(df_all_employees, man_name, df_store):
         manager_service_bonus_paid_bb_min, 0,
         (df_manager['Service Bonus'])).round(2)
     df_manager['Service Bonus'] = np.where(
-        (df_manager['Take Home Per Client']) < 1.00, 0,
+        (df_manager['Take Home Per Client']) <
+        manager_service_bonus_thpc_min, 0,
         (df_manager['Service Bonus'])).round(2)
 
     # store totals
