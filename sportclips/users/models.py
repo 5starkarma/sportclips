@@ -7,17 +7,19 @@ class User(AbstractUser):
     EMPLOYEE_CHOICES = (
         ('stylist', 'STYLIST'),
     )
-
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     email = models.EmailField(max_length=100)
     phone = models.CharField(max_length=10)
-    employee_type = models.CharField(max_length=30, choices=EMPLOYEE_CHOICES, default='dealer')
+    employee_type = models.CharField(
+        max_length=30, choices=EMPLOYEE_CHOICES, default='dealer')
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    image = models.ImageField(default='default.png', upload_to='profile_pics')
+    user = models.OneToOneField\
+        (User, on_delete=models.CASCADE)
+    image = models.ImageField(
+        default='default.png', upload_to='profile_pics')
 
     def __str__(self):
         return f'{self.user.username} Profile'
