@@ -41,4 +41,7 @@ urlpatterns = [
     path(
         'select-manager-run-payroll/', payroll_views.process_payroll,
         name='select_manager_run_payroll'),
+    path(
+        'settings/', payroll_views.settings_view,
+        name='settings'),
 ]

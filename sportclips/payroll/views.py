@@ -1,10 +1,12 @@
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, render_to_response
 from django.urls import reverse_lazy
 from django.views import View
-from .forms import UploadForm, ManagerForm
+from .forms import UploadForm, ManagerForm, SettingsForm
+from .models import PayrollSettings
 from .payroll import run_payroll
 import pandas as pd
 import os
@@ -81,3 +83,22 @@ class FileUploadView(View):
         else:
             return render(
                 request, self.template_name, {'upload_form': upload_form})
+
+
+def settings_view(request):
+    payrollsettings = PayrollSettings.objects.get(id=1)
+    if request.method == 'POST':
+        form = SettingsForm(
+            request.POST, instance=payrollsettings)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request, f'Your settings have been updated!')
+            return redirect('payroll')
+    else:
+        form = SettingsForm(instance=payrollsettings)
+
+    context = {
+        'form': form,
+    }
+    return render(request, 'payroll/settings.html', context)

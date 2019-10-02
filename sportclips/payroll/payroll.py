@@ -5,6 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.contrib.auth import settings
 
+from .models import PayrollSettings
+
 
 def get_employee_names(current_user):
     name_extraction_file = (
@@ -179,27 +181,57 @@ def process_hours(df_hrs_wk1, df_hrs_wk2, df_all_employees):
 
 
 def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
+    settings_object = PayrollSettings.objects.get(id=1)
+
     # stylist bonus settings
-    service_bonus_sales_min = 40.0
-    service_bonus_cap = 150
-    service_bonus_take_home_sales_min = 100
-    service_bonus_paid_bb_min = 0.3
-    star_lvl_1_multiplier = 0.25
-    star_lvl_1_thpc_min = 1.49
-    star_lvl_1_paid_bb_min = 0.34
-    star_lvl_1_clients_per_hour_min = 1.79
-    star_lvl_2_multiplier = 0.5
-    star_lvl_2_thpc_min = 1.74
-    star_lvl_2_paid_bb_min = 0.39
-    star_lvl_2_clients_per_hour_min = 1.99
-    star_lvl_3_multiplier = 1.00
-    star_lvl_3_thpc_min = 1.99
-    star_lvl_3_paid_bb_min = 0.44
-    star_lvl_3_clients_per_hour_min = 2.19
-    star_lvl_4_multiplier = 2.00
-    star_lvl_4_thpc_min = 2.99
-    star_lvl_4_paid_bb_min = 0.64
-    star_lvl_4_clients_per_hour_min = 2.19
+    service_bonus_sales_min = float(
+        settings_object.service_bonus_sales_min)
+    service_bonus_cap = float(
+        settings_object.service_bonus_cap)
+    service_bonus_take_home_sales_min = float(
+        settings_object.service_bonus_take_home_sales_min)
+    service_bonus_paid_bb_min = float(
+        settings_object.service_bonus_paid_bb_min)
+    star_lvl_1_multiplier = float(
+        settings_object.star_lvl_1_multiplier)
+    star_lvl_1_thpc_min = float(
+        settings_object.star_lvl_1_thpc_min)
+    star_lvl_1_paid_bb_min = float(
+        settings_object.star_lvl_1_paid_bb_min)
+    star_lvl_1_clients_per_hour_min = float(
+        settings_object.star_lvl_1_clients_per_hour_min)
+    star_lvl_2_multiplier = float(
+        settings_object.star_lvl_2_multiplier)
+    star_lvl_2_thpc_min = float(
+        settings_object.star_lvl_2_thpc_min)
+    star_lvl_2_paid_bb_min = float(
+        settings_object.star_lvl_2_paid_bb_min)
+    star_lvl_2_clients_per_hour_min = float(
+        settings_object.star_lvl_2_clients_per_hour_min)
+    star_lvl_3_multiplier = float(
+        settings_object.star_lvl_3_multiplier)
+    star_lvl_3_thpc_min = float(
+        settings_object.star_lvl_3_thpc_min)
+    star_lvl_3_paid_bb_min = float(
+        settings_object.star_lvl_3_paid_bb_min)
+    star_lvl_3_clients_per_hour_min = float(
+        settings_object.star_lvl_3_clients_per_hour_min)
+    star_lvl_4_multiplier = float(
+        settings_object.star_lvl_4_multiplier)
+    star_lvl_4_thpc_min = float(
+        settings_object.star_lvl_4_thpc_min)
+    star_lvl_4_paid_bb_min = float(
+        settings_object.star_lvl_4_paid_bb_min)
+    star_lvl_4_clients_per_hour_min = float(
+        settings_object.star_lvl_4_clients_per_hour_min)
+    take_hm_bonus_lvl_1_sales_min = float(
+        settings_object.take_hm_bonus_lvl_1_sales_min)
+    take_hm_bonus_lvl_1_multiplier = float(
+        settings_object.take_hm_bonus_lvl_1_multiplier)
+    take_hm_bonus_lvl_2_sales_min = float(
+        settings_object.take_hm_bonus_lvl_2_sales_min)
+    take_hm_bonus_lvl_2_multiplier = float(
+        settings_object.take_hm_bonus_lvl_2_multiplier)
 
     # stylist service bonus
     df_all_employees['Service Bonus'] = (
@@ -225,8 +257,12 @@ def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
 
     # stylist take home sales bonus
     df_all_employees['Take Home Tier'] = np.where(
-        df_all_employees['Take Home Sales'] < 99, 0, np.where(
-            df_all_employees['Take Home Sales'] > 200, 0.2, 0.1))
+        df_all_employees['Take Home Sales'] <
+        take_hm_bonus_lvl_1_sales_min, 0, np.where(
+            df_all_employees['Take Home Sales'] >
+            take_hm_bonus_lvl_2_sales_min,
+            take_hm_bonus_lvl_2_multiplier,
+            take_hm_bonus_lvl_1_multiplier))
     df_all_employees['Take Home Bonus'] = (
             df_all_employees['Take Home Tier'] * (
         df_all_employees['Take Home Sales']).round(2))
