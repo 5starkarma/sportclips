@@ -1,10 +1,13 @@
-Payroll
+To-do
 
-Input - Files / settings:
-Model that uploads files
+- Move all settings and formulas to top of pages
 
-Process - Run payroll
-Helper function to split the files into names
+- Settings menu
 
+- Upload all files at once // Check file names with small string
 
-Output - Excel sheet
+- Save payroll files to object after running // Payroll object lookup table page
+
+- Notifications page and tab
+
+- Email Notifications

@@ -7,27 +7,30 @@ from django.contrib.auth import settings
 
 
 def get_employee_names(current_user):
-    tips_file = settings.MEDIA_ROOT + current_user + '/Tips_By_Employee_Report.xls'
-    df_employee_names = pd.read_excel(
-        tips_file, sheet_name=0, header=None, skiprows=7)
-    df_employee_names.rename(
-        columns={0: 'Employee'}, inplace=True)
-    df_employee_names['Employee'] = \
-        df_employee_names['Employee'].str.lower()
-    employee_names = df_employee_names.loc[:, 'Employee'].tolist()
+    name_extraction_file = (
+            settings.MEDIA_ROOT + current_user + '/Tips_By_Employee_Report.xls')
+    df_names = pd.read_excel(
+        name_extraction_file, sheet_name=0, header=None, skiprows=7)
+    df_names.rename(columns={0: 'Employee'}, inplace=True)
+    df_names['Employee'] = df_names['Employee'].str.lower()
+    employee_names = df_names.loc[:, 'Employee'].tolist()
     employee_names.append('no manager')
-    print(employee_names)
-    print(tips_file)
     return [(name, name) for name in employee_names]
 
 
 def read_excel_files(filenames):
-    df_stylist_analysis = pd.read_excel(filenames[0], sheet_name=0, header=None, skiprows=4)
-    df_tips = pd.read_excel(filenames[1], sheet_name=0, header=None, skiprows=0)
-    df_hours1 = pd.read_excel(filenames[2], header=None, skiprows=5)
-    df_hours2 = pd.read_excel(filenames[3], header=None, skiprows=5)
-    df_retention = pd.read_excel(filenames[4], sheet_name=0, header=None, skiprows=8)
-    df_efficiency = pd.read_excel(filenames[5], sheet_name=0, header=None, skiprows=5)
+    df_stylist_analysis = pd.read_excel(
+        filenames[0], sheet_name=0, header=None, skiprows=4)
+    df_tips = pd.read_excel(
+        filenames[1], sheet_name=0, header=None, skiprows=0)
+    df_hours1 = pd.read_excel(
+        filenames[2], header=None, skiprows=5)
+    df_hours2 = pd.read_excel(
+        filenames[3], header=None, skiprows=5)
+    df_retention = pd.read_excel(
+        filenames[4], sheet_name=0, header=None, skiprows=8)
+    df_efficiency = pd.read_excel(
+        filenames[5], sheet_name=0, header=None, skiprows=5)
     return df_stylist_analysis, df_tips, df_hours1, df_hours2, df_retention, df_efficiency
 
 
@@ -47,106 +50,128 @@ def prepare_stylist_analysis(df_stylist_analysis):
                  24: 'New Client BB', 25: 'Number of New Clients',
                  26: 'Percent New Clients', 27: 'Number of Kids',
                  28: 'Percent Kids'}, inplace=True)
-    df_stylist_analysis['Employee'] = df_stylist_analysis['First'].astype(str) + ' ' + df_stylist_analysis['Last']
-    df_stylist_analysis['Employee'] = df_stylist_analysis['Employee'].str.lower()
-    df_stylist_analysis['Paid BB Percent'] = df_stylist_analysis['Paid BB Percent'].astype('float') / 100
-    df_stylist_analysis_short = df_stylist_analysis.loc[:, ['Store', 'Employee',
-                                                            'Total Clients', 'Clients Per Hour',
-                                                            'Service Sales', 'Take Home Sales',
-                                                            'Take Home Per Client', 'Service Sales Per Hour',
-                                                            'Paid BB Percent', 'New Client BB']]
+    df_stylist_analysis['Employee'] = (
+            df_stylist_analysis['First'].astype(str) + ' ' + (
+        df_stylist_analysis['Last']))
+    df_stylist_analysis['Employee'] = (
+        df_stylist_analysis['Employee'].str.lower())
+    df_stylist_analysis['Paid BB Percent'] = (
+            df_stylist_analysis['Paid BB Percent'].astype('float') / 100)
+    df_stylist_analysis_short = (
+        df_stylist_analysis.loc[:, ['Store', 'Employee',
+                                    'Total Clients', 'Clients Per Hour',
+                                    'Service Sales', 'Take Home Sales',
+                                    'Take Home Per Client', 'Service Sales Per Hour',
+                                    'Paid BB Percent', 'New Client BB']])
     return df_stylist_analysis, df_stylist_analysis_short
 
 
-def prepare_all_employees_df(df_tips, df_stylist_analysis_short):
+def set_pay_period(df_tips, df_stylist_analysis_short):
     df_tips['Pay Period'] = df_tips.loc[1, 1]
-    df_tips.rename(columns={0: 'Employee', 3: 'Credit Tips'}, inplace=True)
+    df_tips.rename(
+        columns={0: 'Employee', 3: 'Credit Tips'}, inplace=True)
     df_tips = df_tips.drop(df_tips.index[:6])
     df_tips = df_tips.loc[:, ['Employee', 'Credit Tips', 'Pay Period']]
     df_tips['Employee'] = df_tips['Employee'].str.lower()
     df_pay_period = df_tips.iloc[0, 2]
-    df_all_employees = pd.merge(df_stylist_analysis_short, df_tips, how='left', on='Employee').fillna(0)
+    df_all_employees = pd.merge(
+        df_stylist_analysis_short, df_tips, how='left', on='Employee').fillna(0)
     df_all_employees['Pay Period'] = df_pay_period
     return df_all_employees
 
 
-def prepare_df_hours(df_hours1, df_hours2, df_all_employees):
-    df_hours1[0] = df_hours1[0].str.lower()
-    df_hours1.rename(columns={0: 'Employee', 1: 'Date', 5: 'Hours1'}, inplace=True)
-    df_hours1 = df_hours1.loc[:, ['Employee', 'Date', 'Hours1']]
-    df_hours1['Hours1'] = df_hours1[
-        'Hours1'].str.replace(r"[a-zA-Z]", '').astype('float')
-    df_hours1_002 = df_hours1.dropna(subset=['Employee', 'Date', 'Hours1'])
-    df_hours1_003 = df_hours1_002.groupby(['Employee', 'Date']).sum().reset_index()
-    df_hours1_003['Regular Hours'] = 0
-    df_hours1_003['Regular Hours'] = np.where(
-        (df_hours1_003['Hours1']) < 8,
-        (df_hours1_003['Hours1']), 8)
-    df_hours1_003['OT1'] = 0
-    df_hours1_003['OT1'] = np.where(
-        (df_hours1_003['Hours1']) > 8,
-        (df_hours1_003['Hours1']) - 8,
-        (df_hours1_003['OT1']))
-    df_hours1_003['Cum hours'] = df_hours1_003.groupby('Employee')['Hours1'].transform('cumsum')
-    df_hours1_003['Week OT1'] = np.where(df_hours1_003['Cum hours'] -
-                                         df_hours1_003['Hours1'] > 40,
-                                         df_hours1_003['Hours1'],
-                                         df_hours1_003['Cum hours'] - 40)
-
-    df_hours1_003['OT1'] = np.where(df_hours1_003['Cum hours'] > 40,
-                                    df_hours1_003['Week OT1'],
-                                    df_hours1_003['OT1'])
-    df_hours1_003 = df_hours1_003.loc[:, ['Employee', 'Date', 'Hours1', 'OT1']]
-    df_hours1_003 = df_hours1_003.groupby(['Employee']).sum().reset_index()
+def process_hours(df_hrs_wk1, df_hrs_wk2, df_all_employees):
+    # hours settings
+    work_day = 8
+    work_week = 40
     resolution = 0.25
-    df_hours1_003['Hours1'] = (
-        (df_hours1_003[['Hours1']].div(resolution)).round().mul(resolution))
-    df_hours1_003['OT1'] = (
-        (df_hours1_003[['OT1']].div(resolution)).round().mul(resolution))
 
-    df_hours2[0] = df_hours2[0].str.lower()
-    df_hours2.rename(columns={0: 'Employee', 1: 'Date', 5: 'Hours2'}, inplace=True)
-    df_hours2 = df_hours2.loc[:, ['Employee', 'Date', 'Hours2']]
-    df_hours2['Hours2'] = df_hours2[
+    # process hours week one
+    df_hrs_wk1[0] = df_hrs_wk1[0].str.lower()
+    df_hrs_wk1.rename(
+        columns={0: 'Employee', 1: 'Date', 5: 'Hours1'}, inplace=True)
+    df_hrs_wk1 = df_hrs_wk1.loc[:, ['Employee', 'Date', 'Hours1']]
+    df_hrs_wk1['Hours1'] = (
+        df_hrs_wk1['Hours1'].str.replace(r"[a-zA-Z]", '').astype('float'))
+    df_hrs1_dropna = (
+        df_hrs_wk1.dropna(subset=['Employee', 'Date', 'Hours1']))
+    df_hrs_wk1_final = (
+        df_hrs1_dropna.groupby(['Employee', 'Date']).sum().reset_index())
+    df_hrs_wk1_final['Regular Hours'] = 0
+    df_hrs_wk1_final['Regular Hours'] = np.where(
+        (df_hrs_wk1_final['Hours1']) < work_day,
+        (df_hrs_wk1_final['Hours1']), work_day)
+    df_hrs_wk1_final['OT1'] = 0
+    df_hrs_wk1_final['OT1'] = np.where(
+        (df_hrs_wk1_final['Hours1']) > work_day,
+        (df_hrs_wk1_final['Hours1']) - work_day,
+        (df_hrs_wk1_final['OT1']))
+    df_hrs_wk1_final['Cum hours'] = (
+        df_hrs_wk1_final.groupby('Employee')['Hours1'].transform('cumsum'))
+    df_hrs_wk1_final['Week OT1'] = np.where(
+        df_hrs_wk1_final['Cum hours'] -
+        df_hrs_wk1_final['Hours1'] > work_week,
+        df_hrs_wk1_final['Hours1'],
+        df_hrs_wk1_final['Cum hours'] - work_week)
+    df_hrs_wk1_final['OT1'] = np.where(
+        df_hrs_wk1_final['Cum hours'] > work_week,
+        df_hrs_wk1_final['Week OT1'],
+        df_hrs_wk1_final['OT1'])
+    df_hrs_wk1_final = (
+        df_hrs_wk1_final.loc[:, ['Employee', 'Date', 'Hours1', 'OT1']])
+    df_hrs_wk1_final = (
+        df_hrs_wk1_final.groupby(['Employee']).sum().reset_index())
+    df_hrs_wk1_final['Hours1'] = (
+        (df_hrs_wk1_final[['Hours1']].div(resolution)).round().mul(resolution))
+    df_hrs_wk1_final['OT1'] = (
+        (df_hrs_wk1_final[['OT1']].div(resolution)).round().mul(resolution))
+
+    # process hours week two
+    df_hrs_wk2[0] = df_hrs_wk2[0].str.lower()
+    df_hrs_wk2.rename(
+        columns={0: 'Employee', 1: 'Date', 5: 'Hours2'}, inplace=True)
+    df_hrs_wk2 = df_hrs_wk2.loc[:, ['Employee', 'Date', 'Hours2']]
+    df_hrs_wk2['Hours2'] = df_hrs_wk2[
         'Hours2'].str.replace(r"[a-zA-Z]", '').astype('float')
-    df_hours2_002 = df_hours2.dropna(subset=['Employee', 'Date', 'Hours2'])
-
-    df_hours2_003 = df_hours2_002.groupby(['Employee', 'Date']).sum().reset_index()
-    df_hours2_003['Regular Hours'] = 0
-    df_hours2_003['Regular Hours'] = np.where(
-        (df_hours2_003['Hours2']) < 8,
-        (df_hours2_003['Hours2']), 8)
-    df_hours2_003['OT2'] = 0
-    df_hours2_003['OT2'] = np.where(
-        (df_hours2_003['Hours2']) > 8,
-        (df_hours2_003['Hours2']) - 8,
-        (df_hours2_003['OT2']))
-
-    df_hours2_003['Cum hours'] = df_hours2_003.groupby(
+    df_hrs_wk2_dropna = (
+        df_hrs_wk2.dropna(subset=['Employee', 'Date', 'Hours2']))
+    df_hrs_wk2_final = (
+        df_hrs_wk2_dropna.groupby(['Employee', 'Date']).sum().reset_index())
+    df_hrs_wk2_final['Regular Hours'] = 0
+    df_hrs_wk2_final['Regular Hours'] = np.where(
+        (df_hrs_wk2_final['Hours2']) < work_day,
+        (df_hrs_wk2_final['Hours2']), work_day)
+    df_hrs_wk2_final['OT2'] = 0
+    df_hrs_wk2_final['OT2'] = np.where(
+        (df_hrs_wk2_final['Hours2']) > work_day,
+        (df_hrs_wk2_final['Hours2']) - work_day,
+        (df_hrs_wk2_final['OT2']))
+    df_hrs_wk2_final['Cum hours'] = df_hrs_wk2_final.groupby(
         'Employee')['Hours2'].transform('cumsum')
+    df_hrs_wk2_final['Week OT2'] = np.where(
+        df_hrs_wk2_final['Cum hours'] - df_hrs_wk2_final['Hours2'] > work_week,
+        df_hrs_wk2_final['Hours2'],
+        df_hrs_wk2_final['Cum hours'] - work_week)
+    df_hrs_wk2_final['OT2'] = np.where(
+        df_hrs_wk2_final['Cum hours'] > work_week,
+        df_hrs_wk2_final['Week OT2'],
+        df_hrs_wk2_final['OT2'])
+    df_hrs_wk2_final = (
+        df_hrs_wk2_final.loc[:, ['Employee', 'Date', 'Hours2', 'OT2']])
+    df_hrs_wk2_final = (
+        df_hrs_wk2_final.groupby(['Employee']).sum().reset_index())
+    df_hrs_wk2_final['Hours2'] = (
+        (df_hrs_wk2_final[['Hours2']].div(resolution)).round().mul(resolution))
+    df_hrs_wk2_final['OT2'] = (
+        (df_hrs_wk2_final[['OT2']].div(resolution)).round().mul(resolution))
 
-    df_hours2_003['Week OT2'] = np.where(df_hours2_003['Cum hours'] - df_hours2_003['Hours2'] > 40,
-                                         df_hours2_003['Hours2'],
-                                         df_hours2_003['Cum hours'] - 40)
-
-    df_hours2_003['OT2'] = np.where(df_hours2_003['Cum hours'] > 40,
-                                    df_hours2_003['Week OT2'],
-                                    df_hours2_003['OT2'])
-
-    df_hours2_003 = df_hours2_003.loc[:, ['Employee', 'Date', 'Hours2', 'OT2']]
-
-    df_hours2_003 = df_hours2_003.groupby(['Employee']).sum().reset_index()
-    resolution = 0.25
-    df_hours2_003['Hours2'] = (
-        (df_hours2_003[['Hours2']].div(resolution)).round().mul(resolution))
-    df_hours2_003['OT2'] = (
-        (df_hours2_003[['OT2']].div(resolution)).round().mul(resolution))
-    df_all_employees = pd.merge(df_all_employees, df_hours1_003,
-                                how='outer', on='Employee').fillna(0)
-
-    df_all_employees = pd.merge(df_all_employees, df_hours2_003,
-                                how='outer', on='Employee').fillna(0)
-
+    # merge data-frames
+    df_all_employees = pd.merge(
+        df_all_employees, df_hrs_wk1_final,
+        how='outer', on='Employee').fillna(0)
+    df_all_employees = pd.merge(
+        df_all_employees, df_hrs_wk2_final,
+        how='outer', on='Employee').fillna(0)
     df_all_employees['Total Hours'] = (
             df_all_employees['Hours1'] +
             df_all_employees['Hours2'])
@@ -154,79 +179,115 @@ def prepare_df_hours(df_hours1, df_hours2, df_all_employees):
 
 
 def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
-    df_all_employees['Service Sales Min Qualifier'] = 40.0
+    # stylist bonus settings
+    service_bonus_sales_min = 40.0
+    service_bonus_cap = 150
+    service_bonus_take_home_sales_min = 100
+    service_bonus_paid_bb_min = 0.3
+    star_lvl_1_multiplier = 0.25
+    star_lvl_1_thpc_min = 1.49
+    star_lvl_1_paid_bb_min = 0.34
+    star_lvl_1_clients_per_hour_min = 1.79
+    star_lvl_2_multiplier = 0.5
+    star_lvl_2_thpc_min = 1.74
+    star_lvl_2_paid_bb_min = 0.39
+    star_lvl_2_clients_per_hour_min = 1.99
+    star_lvl_3_multiplier = 1.00
+    star_lvl_3_thpc_min = 1.99
+    star_lvl_3_paid_bb_min = 0.44
+    star_lvl_3_clients_per_hour_min = 2.19
+    star_lvl_4_multiplier = 2.00
+    star_lvl_4_thpc_min = 2.99
+    star_lvl_4_paid_bb_min = 0.64
+    star_lvl_4_clients_per_hour_min = 2.19
 
+    # stylist service bonus
     df_all_employees['Service Bonus'] = (
             (df_all_employees['Service Sales Per Hour'] -
-             df_all_employees['Service Sales Min Qualifier']) *
+             service_bonus_sales_min) *
             (df_all_employees['Paid BB Percent'] *
-             df_stylist_analysis['Store Hours']))
-
+             df_stylist_analysis['Store Hours'])).round(2)
     df_all_employees['Service Bonus'] = np.where(
-        (df_all_employees['Service Bonus']) > 150, 150,
+        (df_all_employees['Service Bonus']) >
+        service_bonus_cap, service_bonus_cap,
         (df_all_employees['Service Bonus'])).round(2)
-
     df_all_employees['Service Bonus'] = np.where(
         (df_all_employees['Service Bonus']) < 0.01, 0,
         (df_all_employees['Service Bonus'])).round(2)
-
     df_all_employees['Service Bonus'] = np.where(
-        (df_all_employees['Take Home Sales']) < 100, 0,
+        (df_all_employees['Take Home Sales']) <
+        service_bonus_take_home_sales_min, 0,
+        (df_all_employees['Service Bonus'])).round(2)
+    df_all_employees['Service Bonus'] = np.where(
+        (df_all_employees['Paid BB Percent']) <
+        service_bonus_paid_bb_min, 0,
         (df_all_employees['Service Bonus'])).round(2)
 
-    df_all_employees['Service Bonus'] = np.where(
-        (df_all_employees['Paid BB Percent']) < 0.3, 0,
-        (df_all_employees['Service Bonus'])).round(2)
-
+    # stylist take home sales bonus
     df_all_employees['Take Home Tier'] = np.where(
         df_all_employees['Take Home Sales'] < 99, 0, np.where(
             df_all_employees['Take Home Sales'] > 200, 0.2, 0.1))
-
     df_all_employees['Take Home Bonus'] = (
-            df_all_employees['Take Home Tier'] * df_all_employees['Take Home Sales']).round(2)
+            df_all_employees['Take Home Tier'] * (
+        df_all_employees['Take Home Sales']).round(2))
 
-    df_all_employees['Star Bonus Increase'] = 0.00
-
-    df_all_employees['Star Bonus Increase'][
-        (df_all_employees['Take Home Per Client'] > 1.49) &
-        (df_all_employees['Paid BB Percent'] > 0.34) &
-        (df_all_employees['Clients Per Hour'] > 1.79)] = 0.25
-
-    df_all_employees['Star Bonus Increase'][
-        (df_all_employees['Take Home Per Client'] > 1.74) &
-        (df_all_employees['Paid BB Percent'] > 0.39) &
-        (df_all_employees['Clients Per Hour'] > 1.99)] = 0.50
-
-    df_all_employees['Star Bonus Increase'][
-        (df_all_employees['Take Home Per Client'] > 1.99) &
-        (df_all_employees['Paid BB Percent'] > 0.44) &
-        (df_all_employees['Clients Per Hour'] > 2.19)] = 1.00
-
-    df_all_employees['Star Bonus Increase'][
-        (df_all_employees['Take Home Per Client'] > 2.99) &
-        (df_all_employees['Paid BB Percent'] > 0.64) &
-        (df_all_employees['Clients Per Hour'] > 2.19)] = 2.00
-
+    # stylist star bonus
+    df_all_employees['Star Bonus Multiplier'] = 0.00
+    df_all_employees['Star Bonus Multiplier'][
+        (df_all_employees['Take Home Per Client'] > (
+            star_lvl_1_thpc_min)) &
+        (df_all_employees['Paid BB Percent'] > (
+            star_lvl_1_paid_bb_min)) &
+        (df_all_employees['Clients Per Hour'] > (
+            star_lvl_1_clients_per_hour_min))] = (
+        star_lvl_1_multiplier)
+    df_all_employees['Star Bonus Multiplier'][
+        (df_all_employees['Take Home Per Client'] > (
+            star_lvl_2_thpc_min)) &
+        (df_all_employees['Paid BB Percent'] > (
+            star_lvl_2_paid_bb_min)) &
+        (df_all_employees['Clients Per Hour'] > (
+            star_lvl_2_clients_per_hour_min))] = (
+        star_lvl_2_multiplier)
+    df_all_employees['Star Bonus Multiplier'][
+        (df_all_employees['Take Home Per Client'] > (
+            star_lvl_3_thpc_min)) &
+        (df_all_employees['Paid BB Percent'] > (
+            star_lvl_3_paid_bb_min)) &
+        (df_all_employees['Clients Per Hour'] > (
+            star_lvl_3_clients_per_hour_min))] = (
+        star_lvl_3_multiplier)
+    df_all_employees['Star Bonus Multiplier'][
+        (df_all_employees['Take Home Per Client'] > (
+            star_lvl_4_thpc_min)) &
+        (df_all_employees['Paid BB Percent'] > (
+            star_lvl_4_paid_bb_min)) &
+        (df_all_employees['Clients Per Hour'] > (
+            star_lvl_4_clients_per_hour_min))] = (
+        star_lvl_4_multiplier)
     df_all_employees['Star Bonus'] = (
-            df_all_employees['Star Bonus Increase'] *
+            df_all_employees['Star Bonus Multiplier'] *
             df_all_employees['Total Hours']).round(2)
+
     df_all_employees = df_all_employees[
         ['Store', 'Employee', 'Pay Period', 'Hours1', 'Hours2',
          'OT1', 'OT2', 'Total Hours', 'Credit Tips', 'Total Clients',
          'Clients Per Hour', 'New Client BB', 'Take Home Sales',
          'Take Home Tier', 'Take Home Per Client', 'Service Sales',
          'Service Sales Per Hour', 'Paid BB Percent',
-         'Service Sales Min Qualifier', 'Star Bonus Increase', 'Star Bonus',
+         'Star Bonus Multiplier', 'Star Bonus',
          'Service Bonus', 'Take Home Bonus']].fillna(0)
 
-    df_all_employees['OT'] = df_all_employees['OT1'] + df_all_employees['OT2']
+    df_all_employees['OT'] = (
+            df_all_employees['OT1'] + df_all_employees['OT2'])
     df_all_employees['Holiday'] = ''
     df_all_employees['PTO Hours'] = ''
     df_all_employees['Other Hours/Training'] = ''
     df_all_employees['Other Pay'] = ''
     df_all_employees['Season Ticket Bonus'] = ''
-    df_all_employees['Star Level'] = 'N/A'
 
+    # star levels
+    df_all_employees['Star Level'] = 'N/A'
     df_all_employees['Star Level'][
         (df_all_employees['Take Home Per Client'] > 0.99) &
         (df_all_employees['Paid BB Percent'] > 0.29)] = 'Rising Star!'
@@ -246,38 +307,39 @@ def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
         (df_all_employees['Take Home Per Client'] > 2.99) &
         (df_all_employees['Paid BB Percent'] > 0.64) &
         (df_all_employees['Clients Per Hour'] > 2.19)] = 'Platinum!'
-
     df_all_employees = df_all_employees[[
         'Store', 'Employee', 'Pay Period', 'Hours1', 'Hours2',
         'OT', 'Holiday', 'PTO Hours', 'Other Hours/Training',
         'Other Pay', 'Total Hours', 'Credit Tips',
         'Total Clients', 'Clients Per Hour', 'Take Home Sales',
         'Take Home Tier', 'Take Home Per Client', 'Service Sales',
-        'Service Sales Per Hour', 'Paid BB Percent', 'Service Sales Min Qualifier',
-        'Star Bonus Increase', 'Star Bonus', 'Service Bonus',
+        'Service Sales Per Hour', 'Paid BB Percent',
+        'Star Bonus Multiplier', 'Star Bonus', 'Service Bonus',
         'Take Home Bonus', 'Season Ticket Bonus', 'Star Level',
         'New Client BB']].fillna(0)
-
-    df_store = df_all_employees[['Store', 'Employee', 'Pay Period', 'Hours1',
-                                 'Hours2', 'Total Hours', 'OT', 'Holiday',
-                                 'PTO Hours', 'Other Hours/Training',
-                                 'Credit Tips', 'Other Pay', 'Service Bonus',
-                                 'Take Home Bonus', 'Star Bonus',
-                                 'Season Ticket Bonus', 'Star Level']]
-
+    df_store = (
+        df_all_employees[['Store', 'Employee', 'Pay Period', 'Hours1',
+                          'Hours2', 'Total Hours', 'OT', 'Holiday',
+                          'PTO Hours', 'Other Hours/Training',
+                          'Credit Tips', 'Other Pay', 'Service Bonus',
+                          'Take Home Bonus', 'Star Bonus',
+                          'Season Ticket Bonus', 'Star Level']])
     df_all_employees['Client Excitement'] = ''
     df_all_employees['Client Retention'] = ''
     df_all_employees['Return Retention'] = ''
     df_all_employees['Varsity Times'] = ''
     df_all_employees['MVP Times'] = ''
-
     return df_all_employees, df_store
 
 
 def calculate_manager_bonuses(df_all_employees, man_name, df_store):
+    # manager bonus settings
+    manager_service_breakpoint = 1870
+    manager_service_bonus_cap = 300
+    manager_service_bonus_paid_bb_min = 0.3
+
     df_manager = df_all_employees[df_all_employees['Employee'].str.contains(man_name)]
-    print(df_manager)
-    df_manager['Service Breakpoint'] = 1870
+    df_manager['Service Breakpoint'] = manager_service_breakpoint
     df_manager['Manager Service Diff'] = (
             df_manager['Service Sales'] -
             df_manager['Service Breakpoint'])
@@ -285,32 +347,34 @@ def calculate_manager_bonuses(df_all_employees, man_name, df_store):
     df_manager['Service Bonus'] = (
             df_manager['Store BB Percent'] *
             df_manager['Manager Service Diff']).round(2)
-
     df_manager['Star Bonus'] = 0
     df_manager = df_manager[[
         'Store', 'Pay Period', 'Employee', 'Hours1', 'Hours2',
         'Total Hours', 'OT', 'Holiday', 'PTO Hours',
         'Other Hours/Training', 'Credit Tips', 'Other Pay',
-        'Service Bonus', 'Take Home Bonus',  'Take Home Per Client',
+        'Service Bonus', 'Take Home Bonus', 'Take Home Per Client',
         'Paid BB Percent', 'Star Bonus', 'Season Ticket Bonus',
         'Star Level']]
 
+    # manager service bonus
     df_manager['Service Bonus'] = np.where(
-        df_manager['Service Bonus'] > 300, 300,
+        df_manager['Service Bonus'] >
+        manager_service_bonus_cap, manager_service_bonus_cap,
         df_manager['Service Bonus'])
     df_manager['Service Bonus'] = np.where(
         df_manager['Service Bonus'] < 0, 0,
         df_manager['Service Bonus'])
     df_manager['Service Bonus'] = np.where(
-        (df_manager['Paid BB Percent']) < 0.3, 0,
+        (df_manager['Paid BB Percent']) <
+        manager_service_bonus_paid_bb_min, 0,
         (df_manager['Service Bonus'])).round(2)
     df_manager['Service Bonus'] = np.where(
         (df_manager['Take Home Per Client']) < 1.00, 0,
         (df_manager['Service Bonus'])).round(2)
 
+    # store totals
     df_store.loc[df_store['Employee'] == man_name] = df_manager
     df_store = df_store[:-1]
-
     df_store.loc[-1] = [
         df_store.loc[1, 'Store'], 'total salon',
         df_store.loc[1, 'Pay Period'],
@@ -322,56 +386,59 @@ def calculate_manager_bonuses(df_all_employees, man_name, df_store):
     return df_store
 
 
-def prepare_one_on_one_sheet(df_all_employees, df_retention, df_efficiency):
+def process_one_on_one(df_all_employees, df_retention, df_efficiency):
     df_1on1 = df_all_employees[[
         'Store', 'Employee', 'Pay Period', 'Service Sales Per Hour',
         'Paid BB Percent', 'New Client BB', 'Clients Per Hour',
         'Take Home Per Client', 'Client Excitement',
         'Varsity Times', 'MVP Times']].fillna(0)
-
-    df_1on1_2 = df_1on1[:-1]
+    df_1on1 = df_1on1[:-1]
     df_retention1 = df_retention[[0, 7, 9]]
     df_retention2 = df_retention1[:-1]
-
     df_retention2.rename(columns={
         0: 'Employee', 7: 'Client Retention',
         9: 'Return Retention'}, inplace=True)
-
-    df_retention2['Employee'] = df_retention2['Employee'].str.lower()
-
-    df_1on1_3 = df_1on1_2.merge(df_retention2, how='outer', left_on='Employee',
-                                right_on='Employee').fillna(0)
-
+    df_retention2['Employee'] = (
+        df_retention2['Employee'].str.lower())
+    df_1on1_3 = df_1on1.merge(
+        df_retention2, how='outer', left_on='Employee',
+        right_on='Employee').fillna(0)
     df_1on1_4 = df_1on1_3[[
         'Store', 'Employee', 'Pay Period', 'Service Sales Per Hour',
         'Paid BB Percent', 'New Client BB', 'Clients Per Hour',
         'Take Home Per Client', 'Client Retention',
         'Return Retention', 'Client Excitement']]
-
     df_efficiency = df_efficiency[:-1]
     df_efficiency = df_efficiency[[0, 1, 4]]
-
-    df_efficiency.rename(columns={
-        0: 'Employee', 1: 'MVP Times', 4: 'Varsity Times'}, inplace=True)
-
-    df_efficiency['Employee'] = df_efficiency['Employee'].str.lower()
-
-    df_1on1_5 = df_1on1_4.merge(df_efficiency, how='outer', left_on='Employee',
-                                right_on='Employee').fillna(0)
-
-    df_1on1_5['New Client BB'] = (df_1on1_5['New Client BB'] / 100)
-    df_1on1_5['Client Retention'] = (df_1on1_5['Client Retention'] / 100)
-    df_1on1_5['Return Retention'] = (df_1on1_5['Return Retention'] / 100)
-
-    df_1on1_5['Paid BB Percent'] = df_1on1_5['Paid BB Percent'].round(2)
-    df_1on1_5['Clients Per Hour'] = df_1on1_5['Clients Per Hour'].round(2)
-    df_1on1_5['Take Home Per Client'] = df_1on1_5[
-        'Take Home Per Client'].round(2)
-    df_1on1_5['Client Retention'] = df_1on1_5['Client Retention'].round(2)
-    df_1on1_5['Return Retention'] = df_1on1_5['Return Retention'].round(2)
-    df_1on1_5['MVP Times'] = df_1on1_5['MVP Times'].astype('int')
-    df_1on1_5['Varsity Times'] = df_1on1_5['Varsity Times'].astype('int')
-
+    df_efficiency.rename(
+        columns={
+            0: 'Employee', 1: 'MVP Times', 4: 'Varsity Times'},
+        inplace=True)
+    df_efficiency['Employee'] = (
+        df_efficiency['Employee'].str.lower())
+    df_1on1_5 = df_1on1_4.merge(
+        df_efficiency, how='outer', left_on='Employee',
+        right_on='Employee').fillna(0)
+    df_1on1_5['New Client BB'] = (
+            df_1on1_5['New Client BB'] / 100)
+    df_1on1_5['Client Retention'] = (
+            df_1on1_5['Client Retention'] / 100)
+    df_1on1_5['Return Retention'] = (
+            df_1on1_5['Return Retention'] / 100)
+    df_1on1_5['Paid BB Percent'] = (
+        df_1on1_5['Paid BB Percent'].round(2))
+    df_1on1_5['Clients Per Hour'] = (
+        df_1on1_5['Clients Per Hour'].round(2))
+    df_1on1_5['Take Home Per Client'] = (
+        df_1on1_5['Take Home Per Client'].round(2))
+    df_1on1_5['Client Retention'] = (
+        df_1on1_5['Client Retention'].round(2))
+    df_1on1_5['Return Retention'] = (
+        df_1on1_5['Return Retention'].round(2))
+    df_1on1_5['MVP Times'] = (
+        df_1on1_5['MVP Times'].astype('int'))
+    df_1on1_5['Varsity Times'] = (
+        df_1on1_5['Varsity Times'].astype('int'))
     df_1on1_5 = df_1on1_5[['Store', 'Employee', 'Pay Period',
                            'Service Sales Per Hour', 'Paid BB Percent',
                            'New Client BB', 'Take Home Per Client',
@@ -383,62 +450,62 @@ def prepare_one_on_one_sheet(df_all_employees, df_retention, df_efficiency):
 
 
 def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
-    li = len(df_1on1_5.index)
-
-    # Create variables for dynamic sheet names
+    row_len = len(df_1on1_5.index)
     number_rows = len(df_store.index) + 1
-    sheet1 = df_1on1.loc[0, 'Store']
-    sheet2 = df_1on1_5.loc[0, 'Store'] + ' One-on-One'
+
+    # sheet names
+    payroll = df_1on1.loc[0, 'Store']
+    one_on_one = df_1on1_5.loc[0, 'Store'] + ' One-on-One'
 
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     writer = pd.ExcelWriter(
-        settings.MEDIA_ROOT + current_user + '/payroll.xlsx', engine='xlsxwriter')
+        settings.MEDIA_ROOT + current_user + '/payroll.xlsx',
+        engine='xlsxwriter')
 
     # Convert the data-frame to an XlsxWriter Excel object.
-    df_store.to_excel(writer, index=False, sheet_name=sheet1)
-    df_1on1_5.to_excel(writer, index=False, sheet_name=sheet2)
-
-    # Get the xlsxwriter objects from the data-frame writer object.
+    df_store.to_excel(writer, index=False, sheet_name=payroll)
+    df_1on1_5.to_excel(writer, index=False, sheet_name=one_on_one)
     workbook = writer.book
-    worksheet1 = writer.sheets[sheet1]
-    worksheet2 = writer.sheets[sheet2]
 
-    worksheet2.merge_range('A35:C36', 'Stylist Signature')
-    worksheet2.merge_range('D35:E36', 'Date')
-    worksheet2.merge_range('F35:I36', 'Managers Note')
-    worksheet2.merge_range('A37:C38', 'Stylist Signature')
-    worksheet2.merge_range('D37:E38', 'Date')
-    worksheet2.merge_range('F37:I38', 'Managers Note')
-    worksheet2.merge_range('A39:C40', 'Stylist Signature')
-    worksheet2.merge_range('D39:E40', 'Date')
-    worksheet2.merge_range('F39:I40', 'Managers Note')
-    worksheet2.merge_range('A41:C42', 'Stylist Signature')
-    worksheet2.merge_range('D41:E42', 'Date')
-    worksheet2.merge_range('F41:I42', 'Managers Note')
-    worksheet2.merge_range('A43:C44', 'Stylist Signature')
-    worksheet2.merge_range('D43:E44', 'Date')
-    worksheet2.merge_range('F43:I44', 'Managers Note')
-    worksheet2.merge_range('A45:C46', 'Stylist Signature')
-    worksheet2.merge_range('D45:E46', 'Date')
-    worksheet2.merge_range('F45:I46', 'Managers Note')
-    worksheet2.merge_range('A47:C48', 'Stylist Signature')
-    worksheet2.merge_range('D47:E48', 'Date')
-    worksheet2.merge_range('F47:I48', 'Managers Note')
-    worksheet2.merge_range('A49:C50', 'Stylist Signature')
-    worksheet2.merge_range('D49:E50', 'Date')
-    worksheet2.merge_range('F49:I50', 'Managers Note')
-    worksheet2.merge_range('A51:C52', 'Stylist Signature')
-    worksheet2.merge_range('D51:E52', 'Date')
-    worksheet2.merge_range('F51:I52', 'Managers Note')
-    worksheet2.merge_range('A53:C54', 'Stylist Signature')
-    worksheet2.merge_range('D53:E54', 'Date')
-    worksheet2.merge_range('F53:I54', 'Managers Note')
-    worksheet2.merge_range('A55:C56', 'Stylist Signature')
-    worksheet2.merge_range('D55:E56', 'Date')
-    worksheet2.merge_range('F55:I56', 'Managers Note')
-    worksheet2.merge_range('A57:C58', 'Stylist Signature')
-    worksheet2.merge_range('D57:E58', 'Date')
-    worksheet2.merge_range('F57:I58', 'Managers Note')
+    payroll_sheet = writer.sheets[payroll]
+    one_on_one_sheet = writer.sheets[one_on_one]
+
+    one_on_one_sheet.merge_range('A35:C36', 'Stylist Signature')
+    one_on_one_sheet.merge_range('D35:E36', 'Date')
+    one_on_one_sheet.merge_range('F35:I36', 'Managers Note')
+    one_on_one_sheet.merge_range('A37:C38', 'Stylist Signature')
+    one_on_one_sheet.merge_range('D37:E38', 'Date')
+    one_on_one_sheet.merge_range('F37:I38', 'Managers Note')
+    one_on_one_sheet.merge_range('A39:C40', 'Stylist Signature')
+    one_on_one_sheet.merge_range('D39:E40', 'Date')
+    one_on_one_sheet.merge_range('F39:I40', 'Managers Note')
+    one_on_one_sheet.merge_range('A41:C42', 'Stylist Signature')
+    one_on_one_sheet.merge_range('D41:E42', 'Date')
+    one_on_one_sheet.merge_range('F41:I42', 'Managers Note')
+    one_on_one_sheet.merge_range('A43:C44', 'Stylist Signature')
+    one_on_one_sheet.merge_range('D43:E44', 'Date')
+    one_on_one_sheet.merge_range('F43:I44', 'Managers Note')
+    one_on_one_sheet.merge_range('A45:C46', 'Stylist Signature')
+    one_on_one_sheet.merge_range('D45:E46', 'Date')
+    one_on_one_sheet.merge_range('F45:I46', 'Managers Note')
+    one_on_one_sheet.merge_range('A47:C48', 'Stylist Signature')
+    one_on_one_sheet.merge_range('D47:E48', 'Date')
+    one_on_one_sheet.merge_range('F47:I48', 'Managers Note')
+    one_on_one_sheet.merge_range('A49:C50', 'Stylist Signature')
+    one_on_one_sheet.merge_range('D49:E50', 'Date')
+    one_on_one_sheet.merge_range('F49:I50', 'Managers Note')
+    one_on_one_sheet.merge_range('A51:C52', 'Stylist Signature')
+    one_on_one_sheet.merge_range('D51:E52', 'Date')
+    one_on_one_sheet.merge_range('F51:I52', 'Managers Note')
+    one_on_one_sheet.merge_range('A53:C54', 'Stylist Signature')
+    one_on_one_sheet.merge_range('D53:E54', 'Date')
+    one_on_one_sheet.merge_range('F53:I54', 'Managers Note')
+    one_on_one_sheet.merge_range('A55:C56', 'Stylist Signature')
+    one_on_one_sheet.merge_range('D55:E56', 'Date')
+    one_on_one_sheet.merge_range('F55:I56', 'Managers Note')
+    one_on_one_sheet.merge_range('A57:C58', 'Stylist Signature')
+    one_on_one_sheet.merge_range('D57:E58', 'Date')
+    one_on_one_sheet.merge_range('F57:I58', 'Managers Note')
 
     data_format1 = workbook.add_format(
         {'bg_color': '#ffffff'})
@@ -450,88 +517,92 @@ def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
         {'num_format': '0%'})
     store_total_format = workbook.add_format(
         {'font_size': 40, 'bold': True})
-
-    worksheet1.conditional_format("$A$1:$Q$%d" % number_rows,
-                                  {"type": "formula",
-                                   "criteria": '=INDIRECT("B"&ROW())="total salon"',
-                                   "format": store_total_format})
-
-    worksheet2.conditional_format(1, 3, li, 3, {
+    payroll_sheet.conditional_format(
+        "$A$1:$Q$%d" % number_rows,
+        {"type": "formula",
+         "criteria": '=INDIRECT("B"&ROW())="total salon"',
+         "format": store_total_format})
+    one_on_one_sheet.conditional_format(1, 3, row_len, 3, {
         'type': 'cell', 'criteria': 'less than',
         'value': 3400, 'format': dollar_format})
-
-    worksheet2.conditional_format(1, 4, li, 4, {
+    one_on_one_sheet.conditional_format(1, 4, row_len, 4, {
         'type': 'cell', 'criteria': 'less than',
         'value': 5, 'format': per_format})
-
-    worksheet2.conditional_format(1, 5, li, 5, {
+    one_on_one_sheet.conditional_format(1, 5, row_len, 5, {
         'type': 'cell', 'criteria': 'less than',
         'value': 80, 'format': per_format})
-
-    worksheet2.conditional_format(1, 6, li, 6, {
+    one_on_one_sheet.conditional_format(1, 6, row_len, 6, {
         'type': 'cell', 'criteria': 'less than',
         'value': 100, 'format': dollar_format})
-
-    worksheet2.conditional_format(1, 7, li, 7, {
+    one_on_one_sheet.conditional_format(1, 7, row_len, 7, {
         'type': 'cell', 'criteria': 'less than',
         'value': 100, 'format': dollar_format})
-
-    worksheet2.conditional_format(1, 8, li, 8, {
+    one_on_one_sheet.conditional_format(1, 8, row_len, 8, {
         'type': 'cell', 'criteria': 'less than',
         'value': 20, 'format': per_format})
-
-    worksheet2.conditional_format(1, 9, li, 9, {
+    one_on_one_sheet.conditional_format(1, 9, row_len, 9, {
+        'type': 'cell', 'criteria': 'less than',
+        'value': 100, 'format': per_format})
+    one_on_one_sheet.conditional_format(1, 10, row_len, 10, {
         'type': 'cell', 'criteria': 'less than',
         'value': 100, 'format': per_format})
 
-    worksheet2.conditional_format(1, 10, li, 10, {
-        'type': 'cell', 'criteria': 'less than',
-        'value': 100, 'format': per_format})
+    for row in range(0, row_len + 1, 2):
+        payroll_sheet.set_row(row, cell_format=data_format1)
+        payroll_sheet.set_row(row + 1, cell_format=data_format2)
+        payroll_sheet.write(row, 0, None)
+        payroll_sheet.write(row + 1, 0, None)
 
-    for row in range(0, li + 1, 2):
-        worksheet1.set_row(row, cell_format=data_format1)
-        worksheet1.set_row(row + 1, cell_format=data_format2)
-        worksheet1.write(row, 0, None)
-        worksheet1.write(row + 1, 0, None)
+    for row in range(0, row_len + 1, 2):
+        one_on_one_sheet.set_row(row, cell_format=data_format1)
+        one_on_one_sheet.set_row(row + 1, cell_format=data_format2)
+        one_on_one_sheet.write(row, 0, None)
+        one_on_one_sheet.write(row + 1, 0, None)
 
-    for row in range(0, li + 1, 2):
-        worksheet2.set_row(row, cell_format=data_format1)
-        worksheet2.set_row(row + 1, cell_format=data_format2)
-        worksheet2.write(row, 0, None)
-        worksheet2.write(row + 1, 0, None)
-
-    chart = workbook.add_chart({'type': 'column'})
-    chart1 = workbook.add_chart({'type': 'column', 'num_format': '0%'})
-    chart2 = workbook.add_chart({'type': 'column'})
+    chart_clients_per_hr = workbook.add_chart(
+        {'type': 'column'})
+    chart_paid_bb = workbook.add_chart(
+        {'type': 'column', 'num_format': '0%'})
+    chart_take_home_per_client = workbook.add_chart(
+        {'type': 'column'})
 
     # [sheet name, first_row, first_col, last_row, last_col]
-    chart.add_series({'name': 'Clients Per Hour',
-                      'categories': [sheet2, 1, 1, li, 1],
-                      'values': [sheet2, 1, 6, li, 6],
-                      'gradient': {'colors': ['red', 'black'], }})
-    chart1.add_series({'name': 'Paid Back Bar %',
-                       'categories': [sheet2, 1, 1, li, 1],
-                       'values': [sheet2, 1, 4, li, 4],
-                       'gradient': {'colors': ['red', 'black']},
-                       'type': 'percentage'})
-    chart2.add_series({'name': 'Take Home Per Client',
-                       'categories': [sheet2, 1, 1, li, 1],
-                       'values': [sheet2, 1, 7, li, 7],
-                       'gradient': {'colors': ['red', 'black']}})
+    chart_clients_per_hr.add_series(
+        {'name': 'Clients Per Hour',
+         'categories': [one_on_one, 1, 1, row_len, 1],
+         'values': [one_on_one, 1, 6, row_len, 6],
+         'gradient': {'colors': ['red', 'black'], }})
+    chart_paid_bb.add_series(
+        {'name': 'Paid Back Bar %',
+         'categories': [one_on_one, 1, 1, row_len, 1],
+         'values': [one_on_one, 1, 4, row_len, 4],
+         'gradient': {'colors': ['red', 'black']},
+         'type': 'percentage'})
+    chart_take_home_per_client.add_series(
+        {'name': 'Take Home Per Client',
+         'categories': [one_on_one, 1, 1, row_len, 1],
+         'values': [one_on_one, 1, 7, row_len, 7],
+         'gradient': {'colors': ['red', 'black']}})
 
-    chart.set_x_axis({'num_font': {'rotation': 45}})
-    chart1.set_x_axis({'num_font': {'rotation': 45}})
-    chart2.set_x_axis({'num_font': {'rotation': 45}})
+    chart_clients_per_hr.set_x_axis({'num_font': {'rotation': 45}})
+    chart_paid_bb.set_x_axis({'num_font': {'rotation': 45}})
+    chart_take_home_per_client.set_x_axis({'num_font': {'rotation': 45}})
+    chart_clients_per_hr.set_style(12)
+    chart_paid_bb.set_style(12)
+    chart_take_home_per_client.set_style(12)
 
-    chart.set_style(12)
-    chart1.set_style(12)
-    chart2.set_style(12)
+    one_on_one_sheet.insert_chart(
+        (row_len + 1), 0, chart_clients_per_hr, {
+            'x_scale': .65, 'y_scale': 1.5})
+    one_on_one_sheet.insert_chart(
+        (row_len + 1), 4, chart_paid_bb, {
+            'x_scale': .65, 'y_scale': 1.5})
+    one_on_one_sheet.insert_chart(
+        (row_len + 1), 8, chart_take_home_per_client, {
+            'x_scale': .7, 'y_scale': 1.5})
 
-    worksheet2.insert_chart((li + 1), 0, chart, {'x_scale': .65, 'y_scale': 1.5})
-    worksheet2.insert_chart((li + 1), 4, chart1, {'x_scale': .65, 'y_scale': 1.5})
-    worksheet2.insert_chart((li + 1), 8, chart2, {'x_scale': .7, 'y_scale': 1.5})
-    worksheet1.insert_image('O22', 'media/1.png')
-    worksheet2.insert_image('J44', 'media/1.png')
+    payroll_sheet.insert_image('O22', 'media/1.png')
+    one_on_one_sheet.insert_image('J44', 'media/1.png')
 
     writer.save()
     workbook.close()
@@ -558,9 +629,9 @@ def run_payroll(request, man_name):
     files, user = check_uploaded_files(request)
     df_stylist_analysis, df_tips, df_hours1, df_hours2, df_retention, df_efficiency = read_excel_files(files)
     df_processed_sar, df_processed_sar_short = prepare_stylist_analysis(df_stylist_analysis)
-    df_processed_all_employees = prepare_all_employees_df(df_tips, df_processed_sar_short)
-    df_employees_and_hours = prepare_df_hours(df_hours1, df_hours2, df_processed_all_employees)
+    df_processed_all_employees = set_pay_period(df_tips, df_processed_sar_short)
+    df_employees_and_hours = process_hours(df_hours1, df_hours2, df_processed_all_employees)
     df_employees_and_bonuses, df_store = calculate_stylist_bonuses(df_employees_and_hours, df_processed_sar)
     df_processed_store = calculate_manager_bonuses(df_employees_and_bonuses, man_name, df_store)
-    df_processed_1on1, df_second_1on1 = prepare_one_on_one_sheet(df_employees_and_bonuses, df_retention, df_efficiency)
+    df_processed_1on1, df_second_1on1 = process_one_on_one(df_employees_and_bonuses, df_retention, df_efficiency)
     write_data_to_excel_file(df_processed_1on1, df_processed_store, df_second_1on1, user)
