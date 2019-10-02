@@ -6,12 +6,15 @@ from django.shortcuts import render, redirect
 from .forms import UserRegisterForm, UserUpdateForm, ProfileUpdateForm
 
 
-# Home Page View
 def home(request):
     return render(request, 'users/home.html')
 
 
-# Register View
+@login_required
+def account(request):
+    return render(request, 'users/account.html')
+
+
 def register(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
@@ -21,14 +24,15 @@ def register(request):
             group = Group.objects.get(name=emp_type)
             user.groups.add(group)
             username = form.cleaned_data.get('username')
-            messages.success(request, f'Your account has been created! You are now able to log in!')
+            messages.success(
+                request, f'Your account has been created! '
+                         f'You are now able to log in!')
             return redirect('login')
     else:
         form = UserRegisterForm()
     return render(request, 'users/register.html', {'form': form})
 
 
-# Profile View
 @login_required
 def profile(request):
     if request.method == 'POST':
@@ -39,7 +43,8 @@ def profile(request):
         if u_form.is_valid() and p_form.is_valid():
             u_form.save()
             p_form.save()
-            messages.success(request, f'Your account has been updated!')
+            messages.success(
+                request, f'Your account has been updated!')
             return redirect('profile')
     else:
         u_form = UserUpdateForm(instance=request.user)
@@ -52,8 +57,3 @@ def profile(request):
 
     return render(request, 'users/profile.html', context)
 
-
-# Account View
-@login_required
-def account(request):
-    return render(request, 'users/account.html')
