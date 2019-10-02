@@ -15,5 +15,6 @@ class ManagerForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         username = kwargs.pop('current_user_username')
+        print(username)
         super().__init__(*args, **kwargs)
         self.fields['manager'].choices = get_employee_names(username)

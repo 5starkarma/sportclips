@@ -3,10 +3,11 @@ import numpy as np
 import pandas as pd
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
+from django.contrib.auth import settings
 
 
-def get_employee_names(test):
-    tips_file = 'media/' + test + '/Tips_By_Employee_Report.xls'
+def get_employee_names(current_user):
+    tips_file = settings.MEDIA_ROOT + current_user + '/Tips_By_Employee_Report.xls'
     df_employee_names = pd.read_excel(
         tips_file, sheet_name=0, header=None, skiprows=7)
     df_employee_names.rename(
@@ -15,6 +16,8 @@ def get_employee_names(test):
         df_employee_names['Employee'].str.lower()
     employee_names = df_employee_names.loc[:, 'Employee'].tolist()
     employee_names.append('no manager')
+    print(employee_names)
+    print(tips_file)
     return [(name, name) for name in employee_names]
 
 
@@ -389,7 +392,7 @@ def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
 
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     writer = pd.ExcelWriter(
-        'media/' + current_user + '/payroll.xlsx', engine='xlsxwriter')
+        settings.MEDIA_ROOT + current_user + '/payroll.xlsx', engine='xlsxwriter')
 
     # Convert the data-frame to an XlsxWriter Excel object.
     df_store.to_excel(writer, index=False, sheet_name=sheet1)
@@ -543,7 +546,8 @@ def check_uploaded_files(request):
                '/Employee_Service_Efficiency_SC.xls']
     filenames = []
     for report in reports:
-        filenames.append('media/' + str(current_user) + str(report))
+        filenames.append(
+            settings.MEDIA_ROOT + str(current_user) + str(report))
     for file in filenames:
         if not os.path.isfile(file):
             return redirect('filename-error')

@@ -1,12 +1,13 @@
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
-from django.views.generic.base import View
+from django.views import View
 from .forms import UploadForm, ManagerForm
 from .payroll import run_payroll
 import pandas as pd
-import os.path
+import os
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -16,32 +17,19 @@ def filename_error(request):
 
 
 @login_required
-def get_employee_names(request):
-    tips_file = 'media/' + str(request.user) + '/Tips_By_Employee_Report.xls'
-    df_employee_names = pd.read_excel(
-        tips_file, sheet_name=0, header=None, skiprows=7)
-    df_employee_names.rename(
-        columns={0: 'Employee'}, inplace=True)
-    df_employee_names['Employee'] = \
-        df_employee_names['Employee'].str.lower()
-    employee_names = df_employee_names.loc[:, 'Employee'].tolist()
-    return [(name, name) for name in employee_names]
-
-
-@login_required
 def process_payroll(request):
     user = request.user._wrapped if hasattr(
         request.user, '_wrapped') else request.user
     m_form = ManagerForm(request.POST,
-                         current_user_username=request.user.username)
+                         current_user_username=str(user))
     if request.method == 'POST':
         m_form = ManagerForm(request.POST,
-                             current_user_username=request.user.username)
+                             current_user_username=str(user))
         if m_form.is_valid():
             man_name = m_form.cleaned_data['manager']
             # run payroll
             run_payroll(request, man_name)
-            file_path = 'media/' + str(user) + '/payroll.xlsx'
+            file_path = settings.MEDIA_ROOT + str(user) + '/payroll.xlsx'
             if not os.path.isfile(file_path):
                 return redirect('filename-error')
             response = HttpResponse(
@@ -61,7 +49,7 @@ def delete_old_files(request):
                  '/SC_Client_Retention_Report.xls',
                  '/Employee_Service_Efficiency_SC.xls', '/payroll.xlsx']
     for name in filenames:
-        name = 'media/' + current_user + name
+        name = settings.MEDIA_ROOT + current_user + name
         if os.path.isfile(name):
             os.remove(name)
         else:
