@@ -18,27 +18,27 @@ def filename_error(request):
 
 @login_required
 def process_payroll(request):
-    user = request.user._wrapped if hasattr(
+    current_user = request.user._wrapped if hasattr(
         request.user, '_wrapped') else request.user
-    m_form = ManagerForm(request.POST,
-                         current_user_username=str(user))
+    m_form = ManagerForm(
+        request.POST, current_user_username=str(current_user))
     if request.method == 'POST':
-        m_form = ManagerForm(request.POST,
-                             current_user_username=str(user))
+        m_form = ManagerForm(
+            request.POST, current_user_username=str(current_user))
         if m_form.is_valid():
-            man_name = m_form.cleaned_data['manager']
-            # run payroll
-            run_payroll(request, man_name)
-            file_path = settings.MEDIA_ROOT + str(user) + '/payroll.xlsx'
+            manager_name = m_form.cleaned_data['manager']
+            run_payroll(request, manager_name)
+            file_path = (
+                    settings.MEDIA_ROOT + str(current_user) + '/payroll.xlsx')
             if not os.path.isfile(file_path):
                 return redirect('filename-error')
             response = HttpResponse(
-                open(file_path, 'rb').read())  # Send HttpResponse for download
+                open(file_path, 'rb').read())
             response['Content-Type'] = 'mimetype/submimetype'
-            response['Content-Disposition'] = \
-                'attachment; filename=payroll.xlsx'
+            response['Content-Disposition'] = 'attachment; filename=payroll.xlsx'
             return response
-    return render(request, 'payroll/select-manager-run-payroll.html', {'m_form': m_form})
+    return render(
+        request, 'payroll/select-manager-run-payroll.html', {'m_form': m_form})
 
 
 @login_required
@@ -64,7 +64,8 @@ class FileUploadView(View):
 
     def get(self, request, *args, **kwargs):
         upload_form = self.form_class()
-        return render(request, self.template_name, {'upload_form': upload_form})
+        return render(
+            request, self.template_name, {'upload_form': upload_form})
 
     def post(self, request, *args, **kwargs):
         upload_form = self.form_class(
@@ -79,5 +80,4 @@ class FileUploadView(View):
             return redirect(self.success_url)
         else:
             return render(
-                request, self.template_name,
-                {'upload_form': upload_form})
+                request, self.template_name, {'upload_form': upload_form})
