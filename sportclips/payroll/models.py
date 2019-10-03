@@ -34,8 +34,3 @@ class PayrollSettings(models.Model):
 
 for label in payroll_settings_labels:
     PayrollSettings.add_to_class(label, models.CharField(max_length=16))
-
-
-# class PayrollReport(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-#     report = models.FileField(upload_to=user_directory_path)
