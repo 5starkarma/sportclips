@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.contrib.auth import settings
 
-from .models import PayrollSettings, settings_labels
+from .models import PayrollSettings, payroll_settings_labels
 
 
 def get_employee_names(current_user):
@@ -181,129 +181,84 @@ def process_hours(df_hrs_wk1, df_hrs_wk2, df_all_employees):
 
 
 def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
-    payroll_settings_object = PayrollSettings.objects.get(id=1)
-
     # stylist bonus settings
-    service_bonus_sales_min = float(
-        payroll_settings_object.service_bonus_sales_min)
-    service_bonus_cap = float(
-        payroll_settings_object.service_bonus_cap)
-    service_bonus_take_home_sales_min = float(
-        payroll_settings_object.service_bonus_take_home_sales_min)
-    service_bonus_paid_bb_min = float(
-        payroll_settings_object.service_bonus_paid_bb_min)
-    star_lvl_1_multiplier = float(
-        payroll_settings_object.star_lvl_1_multiplier)
-    star_lvl_1_thpc_min = float(
-        payroll_settings_object.star_lvl_1_thpc_min)
-    star_lvl_1_paid_bb_min = float(
-        payroll_settings_object.star_lvl_1_paid_bb_min)
-    star_lvl_1_clients_per_hour_min = float(
-        payroll_settings_object.star_lvl_1_clients_per_hour_min)
-    star_lvl_2_multiplier = float(
-        payroll_settings_object.star_lvl_2_multiplier)
-    star_lvl_2_thpc_min = float(
-        payroll_settings_object.star_lvl_2_thpc_min)
-    star_lvl_2_paid_bb_min = float(
-        payroll_settings_object.star_lvl_2_paid_bb_min)
-    star_lvl_2_clients_per_hour_min = float(
-        payroll_settings_object.star_lvl_2_clients_per_hour_min)
-    star_lvl_3_multiplier = float(
-        payroll_settings_object.star_lvl_3_multiplier)
-    star_lvl_3_thpc_min = float(
-        payroll_settings_object.star_lvl_3_thpc_min)
-    star_lvl_3_paid_bb_min = float(
-        payroll_settings_object.star_lvl_3_paid_bb_min)
-    star_lvl_3_clients_per_hour_min = float(
-        payroll_settings_object.star_lvl_3_clients_per_hour_min)
-    star_lvl_4_multiplier = float(
-        payroll_settings_object.star_lvl_4_multiplier)
-    star_lvl_4_thpc_min = float(
-        payroll_settings_object.star_lvl_4_thpc_min)
-    star_lvl_4_paid_bb_min = float(
-        payroll_settings_object.star_lvl_4_paid_bb_min)
-    star_lvl_4_clients_per_hour_min = float(
-        payroll_settings_object.star_lvl_4_clients_per_hour_min)
-    take_hm_bonus_lvl_1_sales_min = float(
-        payroll_settings_object.take_hm_bonus_lvl_1_sales_min)
-    take_hm_bonus_lvl_1_multiplier = float(
-        payroll_settings_object.take_hm_bonus_lvl_1_multiplier)
-    take_hm_bonus_lvl_2_sales_min = float(
-        payroll_settings_object.take_hm_bonus_lvl_2_sales_min)
-    take_hm_bonus_lvl_2_multiplier = float(
-        payroll_settings_object.take_hm_bonus_lvl_2_multiplier)
+    payroll_settings_object = PayrollSettings.objects.get(id=1)
+    stylist_bonus_settings = []
+    for label in payroll_settings_labels:
+        stylist_bonus_settings.append(
+            float(getattr(payroll_settings_object, label)))
 
     # stylist service bonus
     df_all_employees['Service Bonus'] = (
             (df_all_employees['Service Sales Per Hour'] -
-             service_bonus_sales_min) *
+             stylist_bonus_settings[4]) *
             (df_all_employees['Paid BB Percent'] *
              df_stylist_analysis['Store Hours'])).round(2)
     df_all_employees['Service Bonus'] = np.where(
         (df_all_employees['Service Bonus']) >
-        service_bonus_cap, service_bonus_cap,
+        stylist_bonus_settings[5], stylist_bonus_settings[1],
         (df_all_employees['Service Bonus'])).round(2)
     df_all_employees['Service Bonus'] = np.where(
         (df_all_employees['Service Bonus']) < 0.01, 0,
         (df_all_employees['Service Bonus'])).round(2)
     df_all_employees['Service Bonus'] = np.where(
         (df_all_employees['Take Home Sales']) <
-        service_bonus_take_home_sales_min, 0,
+        stylist_bonus_settings[10], 0,
         (df_all_employees['Service Bonus'])).round(2)
     df_all_employees['Service Bonus'] = np.where(
         (df_all_employees['Paid BB Percent']) <
-        service_bonus_paid_bb_min, 0,
+        stylist_bonus_settings[7], 0,
         (df_all_employees['Service Bonus'])).round(2)
-
-    # stylist take home sales bonus
-    df_all_employees['Take Home Tier'] = np.where(
-        df_all_employees['Take Home Sales'] <
-        take_hm_bonus_lvl_1_sales_min, 0, np.where(
-            df_all_employees['Take Home Sales'] >
-            take_hm_bonus_lvl_2_sales_min,
-            take_hm_bonus_lvl_2_multiplier,
-            take_hm_bonus_lvl_1_multiplier))
-    df_all_employees['Take Home Bonus'] = (
-            df_all_employees['Take Home Tier'] * (
-        df_all_employees['Take Home Sales']).round(2))
 
     # stylist star bonus
     df_all_employees['Star Bonus Multiplier'] = 0.00
     df_all_employees['Star Bonus Multiplier'][
         (df_all_employees['Take Home Per Client'] > (
-            star_lvl_1_thpc_min)) &
+            stylist_bonus_settings[9])) &
         (df_all_employees['Paid BB Percent'] > (
-            star_lvl_1_paid_bb_min)) &
+            stylist_bonus_settings[10])) &
         (df_all_employees['Clients Per Hour'] > (
-            star_lvl_1_clients_per_hour_min))] = (
-        star_lvl_1_multiplier)
+            stylist_bonus_settings[11]))] = (
+        stylist_bonus_settings[8])
     df_all_employees['Star Bonus Multiplier'][
         (df_all_employees['Take Home Per Client'] > (
-            star_lvl_2_thpc_min)) &
+            stylist_bonus_settings[13])) &
         (df_all_employees['Paid BB Percent'] > (
-            star_lvl_2_paid_bb_min)) &
+            stylist_bonus_settings[14])) &
         (df_all_employees['Clients Per Hour'] > (
-            star_lvl_2_clients_per_hour_min))] = (
-        star_lvl_2_multiplier)
+            stylist_bonus_settings[15]))] = (
+        stylist_bonus_settings[12])
     df_all_employees['Star Bonus Multiplier'][
         (df_all_employees['Take Home Per Client'] > (
-            star_lvl_3_thpc_min)) &
+            stylist_bonus_settings[17])) &
         (df_all_employees['Paid BB Percent'] > (
-            star_lvl_3_paid_bb_min)) &
+            stylist_bonus_settings[18])) &
         (df_all_employees['Clients Per Hour'] > (
-            star_lvl_3_clients_per_hour_min))] = (
-        star_lvl_3_multiplier)
+            stylist_bonus_settings[19]))] = (
+        stylist_bonus_settings[16])
     df_all_employees['Star Bonus Multiplier'][
         (df_all_employees['Take Home Per Client'] > (
-            star_lvl_4_thpc_min)) &
+            stylist_bonus_settings[21])) &
         (df_all_employees['Paid BB Percent'] > (
-            star_lvl_4_paid_bb_min)) &
+            stylist_bonus_settings[22])) &
         (df_all_employees['Clients Per Hour'] > (
-            star_lvl_4_clients_per_hour_min))] = (
-        star_lvl_4_multiplier)
+            stylist_bonus_settings[23]))] = (
+        stylist_bonus_settings[20])
     df_all_employees['Star Bonus'] = (
             df_all_employees['Star Bonus Multiplier'] *
             df_all_employees['Total Hours']).round(2)
+
+    # stylist take home sales bonus
+    df_all_employees['Take Home Tier'] = np.where(
+        df_all_employees['Take Home Sales'] <
+        stylist_bonus_settings[24], 0, np.where(
+            df_all_employees['Take Home Sales'] >
+            stylist_bonus_settings[26],
+            stylist_bonus_settings[27],
+            stylist_bonus_settings[25]))
+    df_all_employees['Take Home Bonus'] = (
+            df_all_employees['Take Home Tier'] * (
+        df_all_employees['Take Home Sales']).round(2))
 
     df_all_employees = df_all_employees[
         ['Store', 'Employee', 'Pay Period', 'Hours1', 'Hours2',
@@ -597,16 +552,16 @@ def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
         one_on_one_sheet.write(row, 0, None)
         one_on_one_sheet.write(row + 1, 0, None)
 
-    chart_clients_per_hr = workbook.add_chart(
+    chart_thpc = workbook.add_chart(
         {'type': 'column'})
     chart_paid_bb = workbook.add_chart(
         {'type': 'column', 'num_format': '0%'})
-    chart_take_home_per_client = workbook.add_chart(
+    chart_clients_per_hr = workbook.add_chart(
         {'type': 'column'})
 
     # [sheet name, first_row, first_col, last_row, last_col]
-    chart_clients_per_hr.add_series(
-        {'name': 'Clients Per Hour',
+    chart_thpc.add_series(
+        {'name': 'Take Home Per Client',
          'categories': [one_on_one, 1, 1, row_len, 1],
          'values': [one_on_one, 1, 6, row_len, 6],
          'gradient': {'colors': ['red', 'black'], }})
@@ -616,27 +571,27 @@ def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
          'values': [one_on_one, 1, 4, row_len, 4],
          'gradient': {'colors': ['red', 'black']},
          'type': 'percentage'})
-    chart_take_home_per_client.add_series(
-        {'name': 'Take Home Per Client',
+    chart_clients_per_hr.add_series(
+        {'name': 'Clients Per Hour',
          'categories': [one_on_one, 1, 1, row_len, 1],
          'values': [one_on_one, 1, 7, row_len, 7],
          'gradient': {'colors': ['red', 'black']}})
 
-    chart_clients_per_hr.set_x_axis({'num_font': {'rotation': 45}})
+    chart_thpc.set_x_axis({'num_font': {'rotation': 45}})
     chart_paid_bb.set_x_axis({'num_font': {'rotation': 45}})
-    chart_take_home_per_client.set_x_axis({'num_font': {'rotation': 45}})
-    chart_clients_per_hr.set_style(12)
+    chart_clients_per_hr.set_x_axis({'num_font': {'rotation': 45}})
+    chart_thpc.set_style(12)
     chart_paid_bb.set_style(12)
-    chart_take_home_per_client.set_style(12)
+    chart_clients_per_hr.set_style(12)
 
     one_on_one_sheet.insert_chart(
-        (row_len + 1), 0, chart_clients_per_hr, {
+        (row_len + 1), 0, chart_thpc, {
             'x_scale': .65, 'y_scale': 1.5})
     one_on_one_sheet.insert_chart(
         (row_len + 1), 4, chart_paid_bb, {
             'x_scale': .65, 'y_scale': 1.5})
     one_on_one_sheet.insert_chart(
-        (row_len + 1), 8, chart_take_home_per_client, {
+        (row_len + 1), 8, chart_clients_per_hr, {
             'x_scale': .7, 'y_scale': 1.5})
 
     payroll_sheet.insert_image('O22', 'media/1.png')

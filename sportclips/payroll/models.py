@@ -1,7 +1,7 @@
 from django.db import models
 from users.models import User
 
-settings_labels = [
+payroll_settings_labels = [
     'manager_service_breakpoint', 'manager_service_bonus_cap',
     'manager_service_bonus_paid_bb_min', 'manager_service_bonus_thpc_min',
     'service_bonus_sales_min', 'service_bonus_cap',
@@ -32,5 +32,5 @@ class PayrollSettings(models.Model):
     pass
 
 
-for label in settings_labels:
+for label in payroll_settings_labels:
     PayrollSettings.add_to_class(label, models.CharField(max_length=16))

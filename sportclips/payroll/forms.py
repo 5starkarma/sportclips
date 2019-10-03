@@ -1,5 +1,5 @@
 from django import forms
-from .models import UploadReports, PayrollSettings, settings_labels
+from .models import UploadReports, PayrollSettings, payroll_settings_labels
 from .payroll import get_employee_names
 
 
@@ -24,4 +24,4 @@ class SettingsForm(forms.ModelForm):
 
     class Meta:
         model = PayrollSettings
-        fields = settings_labels
+        fields = payroll_settings_labels
