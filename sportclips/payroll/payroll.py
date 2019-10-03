@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.contrib.auth import settings
 
-from .models import PayrollSettings
+from .models import PayrollSettings, settings_labels
 
 
 def get_employee_names(current_user):
@@ -181,57 +181,57 @@ def process_hours(df_hrs_wk1, df_hrs_wk2, df_all_employees):
 
 
 def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
-    settings_object = PayrollSettings.objects.get(id=1)
+    payroll_settings_object = PayrollSettings.objects.get(id=1)
 
     # stylist bonus settings
     service_bonus_sales_min = float(
-        settings_object.service_bonus_sales_min)
+        payroll_settings_object.service_bonus_sales_min)
     service_bonus_cap = float(
-        settings_object.service_bonus_cap)
+        payroll_settings_object.service_bonus_cap)
     service_bonus_take_home_sales_min = float(
-        settings_object.service_bonus_take_home_sales_min)
+        payroll_settings_object.service_bonus_take_home_sales_min)
     service_bonus_paid_bb_min = float(
-        settings_object.service_bonus_paid_bb_min)
+        payroll_settings_object.service_bonus_paid_bb_min)
     star_lvl_1_multiplier = float(
-        settings_object.star_lvl_1_multiplier)
+        payroll_settings_object.star_lvl_1_multiplier)
     star_lvl_1_thpc_min = float(
-        settings_object.star_lvl_1_thpc_min)
+        payroll_settings_object.star_lvl_1_thpc_min)
     star_lvl_1_paid_bb_min = float(
-        settings_object.star_lvl_1_paid_bb_min)
+        payroll_settings_object.star_lvl_1_paid_bb_min)
     star_lvl_1_clients_per_hour_min = float(
-        settings_object.star_lvl_1_clients_per_hour_min)
+        payroll_settings_object.star_lvl_1_clients_per_hour_min)
     star_lvl_2_multiplier = float(
-        settings_object.star_lvl_2_multiplier)
+        payroll_settings_object.star_lvl_2_multiplier)
     star_lvl_2_thpc_min = float(
-        settings_object.star_lvl_2_thpc_min)
+        payroll_settings_object.star_lvl_2_thpc_min)
     star_lvl_2_paid_bb_min = float(
-        settings_object.star_lvl_2_paid_bb_min)
+        payroll_settings_object.star_lvl_2_paid_bb_min)
     star_lvl_2_clients_per_hour_min = float(
-        settings_object.star_lvl_2_clients_per_hour_min)
+        payroll_settings_object.star_lvl_2_clients_per_hour_min)
     star_lvl_3_multiplier = float(
-        settings_object.star_lvl_3_multiplier)
+        payroll_settings_object.star_lvl_3_multiplier)
     star_lvl_3_thpc_min = float(
-        settings_object.star_lvl_3_thpc_min)
+        payroll_settings_object.star_lvl_3_thpc_min)
     star_lvl_3_paid_bb_min = float(
-        settings_object.star_lvl_3_paid_bb_min)
+        payroll_settings_object.star_lvl_3_paid_bb_min)
     star_lvl_3_clients_per_hour_min = float(
-        settings_object.star_lvl_3_clients_per_hour_min)
+        payroll_settings_object.star_lvl_3_clients_per_hour_min)
     star_lvl_4_multiplier = float(
-        settings_object.star_lvl_4_multiplier)
+        payroll_settings_object.star_lvl_4_multiplier)
     star_lvl_4_thpc_min = float(
-        settings_object.star_lvl_4_thpc_min)
+        payroll_settings_object.star_lvl_4_thpc_min)
     star_lvl_4_paid_bb_min = float(
-        settings_object.star_lvl_4_paid_bb_min)
+        payroll_settings_object.star_lvl_4_paid_bb_min)
     star_lvl_4_clients_per_hour_min = float(
-        settings_object.star_lvl_4_clients_per_hour_min)
+        payroll_settings_object.star_lvl_4_clients_per_hour_min)
     take_hm_bonus_lvl_1_sales_min = float(
-        settings_object.take_hm_bonus_lvl_1_sales_min)
+        payroll_settings_object.take_hm_bonus_lvl_1_sales_min)
     take_hm_bonus_lvl_1_multiplier = float(
-        settings_object.take_hm_bonus_lvl_1_multiplier)
+        payroll_settings_object.take_hm_bonus_lvl_1_multiplier)
     take_hm_bonus_lvl_2_sales_min = float(
-        settings_object.take_hm_bonus_lvl_2_sales_min)
+        payroll_settings_object.take_hm_bonus_lvl_2_sales_min)
     take_hm_bonus_lvl_2_multiplier = float(
-        settings_object.take_hm_bonus_lvl_2_multiplier)
+        payroll_settings_object.take_hm_bonus_lvl_2_multiplier)
 
     # stylist service bonus
     df_all_employees['Service Bonus'] = (
