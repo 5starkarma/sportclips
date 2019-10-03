@@ -268,7 +268,6 @@ def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
          'Service Sales Per Hour', 'Paid BB Percent',
          'Star Bonus Multiplier', 'Star Bonus',
          'Service Bonus', 'Take Home Bonus']].fillna(0)
-
     df_all_employees['OT'] = (
             df_all_employees['OT1'] + df_all_employees['OT2'])
     df_all_employees['Holiday'] = ''
@@ -320,6 +319,7 @@ def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
     df_all_employees['Return Retention'] = ''
     df_all_employees['Varsity Times'] = ''
     df_all_employees['MVP Times'] = ''
+
     return df_all_employees, df_store
 
 

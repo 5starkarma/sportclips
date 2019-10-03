@@ -1,17 +1,26 @@
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
 from django.http import HttpResponse
-from django.shortcuts import render, redirect, render_to_response
+from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views import View
+
 from .forms import UploadForm, ManagerForm, SettingsForm
-from .models import PayrollSettings
+from .models import PayrollSettings, UploadReports
+from users.models import User
 from .payroll import run_payroll
+
 import pandas as pd
 import os
 
 pd.options.mode.chained_assignment = None  # default='warn'
+
+filenames = ['/Stylist_Analysis.xls', '/Tips_By_Employee_Report.xls',
+             '/Employee_Hours1.xls', '/Employee_Hours2.xls',
+             '/SC_Client_Retention_Report.xls',
+             '/Employee_Service_Efficiency_SC.xls', '/payroll.xlsx']
 
 
 def filename_error(request):
@@ -28,6 +37,15 @@ def process_payroll(request):
         m_form = ManagerForm(
             request.POST, current_user_username=str(current_user))
         if m_form.is_valid():
+            store_owner = User.objects.filter(groups__name='owner').last()
+            owner_email = store_owner.email
+            send_mail(
+                f'{current_user}: Payroll complete!',
+                f'{current_user} has completed payroll for your Sportclips store.',
+                'davidalford678@gmail.com',
+                [owner_email],
+                fail_silently=False,
+            )
             manager_name = m_form.cleaned_data['manager']
             run_payroll(request, manager_name)
             file_path = (
@@ -45,11 +63,8 @@ def process_payroll(request):
 
 @login_required
 def delete_old_files(request):
+    UploadReports.objects.all().delete()
     current_user = str(request.user)
-    filenames = ['/Stylist_Analysis.xls', '/Tips_By_Employee_Report.xls',
-                 '/Employee_Hours1.xls', '/Employee_Hours2.xls',
-                 '/SC_Client_Retention_Report.xls',
-                 '/Employee_Service_Efficiency_SC.xls', '/payroll.xlsx']
     for name in filenames:
         name = settings.MEDIA_ROOT + current_user + name
         if os.path.isfile(name):
@@ -73,11 +88,8 @@ class FileUploadView(View):
         upload_form = self.form_class(
             request.POST, request.FILES)
         if upload_form.is_valid():
-            # save the form without commit
             form = upload_form.save(commit=False)
-            # request the user
             form.user = self.request.user
-            # finish saving the form
             form.save()
             return redirect(self.success_url)
         else:
@@ -97,7 +109,6 @@ def settings_view(request):
             return redirect('payroll')
     else:
         form = SettingsForm(instance=payrollsettings)
-
     context = {
         'form': form,
     }

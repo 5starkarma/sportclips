@@ -5,14 +5,15 @@ from django.db import models
 
 class User(AbstractUser):
     EMPLOYEE_CHOICES = (
-        ('stylist', 'STYLIST'),
+        ('manager', 'MANAGER'),
+        ('owner', 'OWNER'),
     )
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     email = models.EmailField(max_length=100)
     phone = models.CharField(max_length=10)
     employee_type = models.CharField(
-        max_length=30, choices=EMPLOYEE_CHOICES, default='dealer')
+        max_length=30, choices=EMPLOYEE_CHOICES, default='manager')
 
 
 class Profile(models.Model):

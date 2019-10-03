@@ -6,9 +6,9 @@ from .models import User, Profile
 
 class UserRegisterForm(UserCreationForm):
     EMPLOYEE_CHOICES = (
-        ('stylist', 'STYLIST'),
+        ('manager', 'MANAGER'),
+        ('owner', 'OWNER'),
     )
-
     first_name = forms.CharField()
     last_name = forms.CharField()
     email = forms.EmailField()
@@ -25,9 +25,9 @@ class UserRegisterForm(UserCreationForm):
 
 class UserUpdateForm(forms.ModelForm):
     EMPLOYEE_CHOICES = (
-        ('stylist', 'STYLIST'),
+        ('manager', 'MANAGER'),
+        ('owner', 'OWNER'),
     )
-
     first_name = forms.CharField()
     last_name = forms.CharField()
     email = forms.EmailField()
