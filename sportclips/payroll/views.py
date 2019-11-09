@@ -8,7 +8,7 @@ from django.urls import reverse_lazy
 from django.views import View
 
 from .forms import UploadForm, ManagerForm, SettingsForm
-from .models import PayrollSettings, UploadReports
+from .models import PayrollSettings, Reports
 from users.models import User
 from .payroll import run_payroll
 
@@ -37,17 +37,17 @@ def process_payroll(request):
         m_form = ManagerForm(
             request.POST, current_user_username=str(current_user))
         if m_form.is_valid():
-            store_owner = User.objects.filter(groups__name='owner').last()
-            owner_email = store_owner.email
-            send_mail(
-                f'{current_user}: Payroll complete!',
-                f'{current_user} has completed payroll for your Sportclips store.',
-                'davidalford678@gmail.com',
-                [owner_email],
-                fail_silently=False,
-            )
+            # store_owner = User.objects.filter(groups__name='owner').last()
+            # owner_email = store_owner.email
+            # send_mail(
+            #     f'{current_user}: Payroll complete!',
+            #     f'{current_user} has completed payroll for your Sportclips store.',
+            #     'davidalford678@gmail.com',
+            #     [owner_email],
+            #     fail_silently=False,
+            # )
             manager_name = m_form.cleaned_data['manager']
-            run_payroll(request, manager_name)
+            run_payroll(str(current_user), manager_name)
             file_path = (
                     settings.MEDIA_ROOT + str(current_user) + '/payroll.xlsx')
             if not os.path.isfile(file_path):
@@ -60,24 +60,24 @@ def process_payroll(request):
     return render(
         request, 'payroll/select-manager-run-payroll.html', {'m_form': m_form})
 
-
+#
 @login_required
 def delete_old_files(request):
-    UploadReports.objects.all().delete()
-    current_user = str(request.user)
-    for name in filenames:
-        name = settings.MEDIA_ROOT + current_user + name
-        if os.path.isfile(name):
-            os.remove(name)
-        else:
-            pass
+    # Reports.objects.all().delete()
+    # current_user = str(request.user)
+    # for name in filenames:
+    #     name = settings.MEDIA_ROOT + current_user + name
+    #     if os.path.isfile(name):
+    #         os.remove(name)
+    #     else:
+    #         pass
     return render(request, 'payroll/payroll.html')
 
 
 class FileUploadView(View):
     form_class = UploadForm
     success_url = reverse_lazy('home')
-    template_name = 'file_upload.html'
+    template_name = 'upload.html'
 
     def get(self, request, *args, **kwargs):
         upload_form = self.form_class()

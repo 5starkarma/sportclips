@@ -1,18 +1,18 @@
-import os
 import numpy as np
 import pandas as pd
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect
+
 from django.contrib.auth import settings
 
-from .models import PayrollSettings, payroll_settings_labels
+from .models import PayrollSettings, Reports
 
 
-def get_employee_names(current_user):
-    name_extraction_file = (
-            settings.MEDIA_ROOT + current_user + '/Tips_By_Employee_Report.xls')
+def get_employee_names():
     df_names = pd.read_excel(
-        name_extraction_file, sheet_name=0, header=None, skiprows=7)
+        Reports.objects.latest(
+            'tips_by_employee').tips_by_employee.url.strip("/"),
+        sheet_name=0,
+        header=None,
+        skiprows=7)
     df_names.rename(columns={0: 'Employee'}, inplace=True)
     df_names['Employee'] = df_names['Employee'].str.lower()
     employee_names = df_names.loc[:, 'Employee'].tolist()
@@ -20,19 +20,31 @@ def get_employee_names(current_user):
     return [(name, name) for name in employee_names]
 
 
-def read_excel_files(filenames):
+def read_excel_files():
     df_stylist_analysis = pd.read_excel(
-        filenames[0], sheet_name=0, header=None, skiprows=4)
+        Reports.objects.latest(
+            'stylist_analysis').stylist_analysis.url.strip("/"),
+        sheet_name=0, header=None, skiprows=4)
     df_tips = pd.read_excel(
-        filenames[1], sheet_name=0, header=None, skiprows=0)
+        Reports.objects.latest(
+            'tips_by_employee').tips_by_employee.url.strip("/"),
+        sheet_name=0, header=None, skiprows=0)
     df_hours1 = pd.read_excel(
-        filenames[2], header=None, skiprows=5)
+        Reports.objects.latest(
+            'hours_week_1').hours_week_1.url.strip("/"),
+        header=None, skiprows=5)
     df_hours2 = pd.read_excel(
-        filenames[3], header=None, skiprows=5)
+        Reports.objects.latest(
+            'hours_week_2').hours_week_2.url.strip("/"),
+        header=None, skiprows=5)
     df_retention = pd.read_excel(
-        filenames[4], sheet_name=0, header=None, skiprows=8)
+        Reports.objects.latest(
+            'client_retention').client_retention.url.strip("/"),
+        sheet_name=0, header=None, skiprows=8)
     df_efficiency = pd.read_excel(
-        filenames[5], sheet_name=0, header=None, skiprows=5)
+        Reports.objects.latest(
+            'employee_service_efficiency').employee_service_efficiency.url.strip("/"),
+        sheet_name=0, header=None, skiprows=5)
     return df_stylist_analysis, df_tips, df_hours1, df_hours2, df_retention, df_efficiency
 
 
@@ -182,68 +194,85 @@ def process_hours(df_hrs_wk1, df_hrs_wk2, df_all_employees):
 
 def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
     # stylist bonus settings
-    payroll_settings_object = PayrollSettings.objects.get(id=1)
-    stylist_bonus_settings = []
-    for label in payroll_settings_labels:
-        stylist_bonus_settings.append(
-            float(getattr(payroll_settings_object, label)))
+    bonus_settings = PayrollSettings.objects.get(id=1)
+
+    service_bonus_sales_min = float(bonus_settings.service_bonus_sales_min)
+    service_bonus_cap = float(bonus_settings.service_bonus_cap)
+    service_bonus_take_home_sales_min = float(bonus_settings.service_bonus_take_home_sales_min)
+    service_bonus_paid_bb_min = float(bonus_settings.service_bonus_paid_bb_min)
+    star_lvl_1_multiplier = float(bonus_settings.star_lvl_1_multiplier)
+    star_lvl_1_thpc_min = float(bonus_settings.star_lvl_1_thpc_min)
+    star_lvl_1_paid_bb_min = float(bonus_settings.star_lvl_1_paid_bb_min)
+    star_lvl_1_clients_per_hour_min = float(bonus_settings.star_lvl_1_clients_per_hour_min)
+    star_lvl_2_multiplier = float(bonus_settings.star_lvl_2_multiplier)
+    star_lvl_2_thpc_min = float(bonus_settings.star_lvl_2_thpc_min)
+    star_lvl_2_paid_bb_min = float(bonus_settings.star_lvl_2_paid_bb_min)
+    star_lvl_2_clients_per_hour_min = float(bonus_settings.star_lvl_2_clients_per_hour_min)
+    star_lvl_3_multiplier = float(bonus_settings.star_lvl_3_multiplier)
+    star_lvl_3_thpc_min = float(bonus_settings.star_lvl_3_thpc_min)
+    star_lvl_3_paid_bb_min = float(bonus_settings.star_lvl_3_paid_bb_min)
+    star_lvl_3_clients_per_hour_min = float(bonus_settings.star_lvl_3_clients_per_hour_min)
+    star_lvl_4_multiplier = float(bonus_settings.star_lvl_4_multiplier)
+    star_lvl_4_thpc_min = float(bonus_settings.star_lvl_4_thpc_min)
+    star_lvl_4_paid_bb_min = float(bonus_settings.star_lvl_4_paid_bb_min)
+    star_lvl_4_clients_per_hour_min = float(bonus_settings.star_lvl_4_clients_per_hour_min)
+    take_hm_bonus_lvl_1_sales_min = float(bonus_settings.take_hm_bonus_lvl_1_sales_min)
+    take_hm_bonus_lvl_1_multiplier = float(bonus_settings.take_hm_bonus_lvl_1_multiplier)
+    take_hm_bonus_lvl_2_sales_min = float(bonus_settings.take_hm_bonus_lvl_2_sales_min)
+    take_hm_bonus_lvl_2_multiplier = float(bonus_settings.take_hm_bonus_lvl_2_multiplier)
 
     # stylist service bonus
     df_all_employees['Service Bonus'] = (
             (df_all_employees['Service Sales Per Hour'] -
-             stylist_bonus_settings[4]) *
+             service_bonus_sales_min) *
             (df_all_employees['Paid BB Percent'] *
              df_stylist_analysis['Store Hours'])).round(2)
     df_all_employees['Service Bonus'] = np.where(
-        (df_all_employees['Service Bonus']) >
-        stylist_bonus_settings[5], stylist_bonus_settings[1],
+        (df_all_employees['Service Bonus'])
+        > service_bonus_cap, service_bonus_cap,
         (df_all_employees['Service Bonus'])).round(2)
     df_all_employees['Service Bonus'] = np.where(
         (df_all_employees['Service Bonus']) < 0.01, 0,
         (df_all_employees['Service Bonus'])).round(2)
     df_all_employees['Service Bonus'] = np.where(
         (df_all_employees['Take Home Sales']) <
-        stylist_bonus_settings[10], 0,
+        service_bonus_take_home_sales_min, 0,
         (df_all_employees['Service Bonus'])).round(2)
     df_all_employees['Service Bonus'] = np.where(
         (df_all_employees['Paid BB Percent']) <
-        stylist_bonus_settings[7], 0,
+        service_bonus_paid_bb_min, 0,
         (df_all_employees['Service Bonus'])).round(2)
 
     # stylist star bonus
     df_all_employees['Star Bonus Multiplier'] = 0.00
     df_all_employees['Star Bonus Multiplier'][
-        (df_all_employees['Take Home Per Client'] > (
-            stylist_bonus_settings[9])) &
-        (df_all_employees['Paid BB Percent'] > (
-            stylist_bonus_settings[10])) &
-        (df_all_employees['Clients Per Hour'] > (
-            stylist_bonus_settings[11]))] = (
-        stylist_bonus_settings[8])
+        (df_all_employees['Take Home Per Client']
+         > star_lvl_1_thpc_min)
+        & (df_all_employees['Paid BB Percent']
+           > star_lvl_1_paid_bb_min)
+        & (df_all_employees['Clients Per Hour']
+           > star_lvl_1_clients_per_hour_min)] = star_lvl_1_multiplier
     df_all_employees['Star Bonus Multiplier'][
         (df_all_employees['Take Home Per Client'] > (
-            stylist_bonus_settings[13])) &
+            star_lvl_2_thpc_min)) &
         (df_all_employees['Paid BB Percent'] > (
-            stylist_bonus_settings[14])) &
+            star_lvl_2_paid_bb_min)) &
         (df_all_employees['Clients Per Hour'] > (
-            stylist_bonus_settings[15]))] = (
-        stylist_bonus_settings[12])
+            star_lvl_2_clients_per_hour_min))] = star_lvl_2_multiplier
     df_all_employees['Star Bonus Multiplier'][
         (df_all_employees['Take Home Per Client'] > (
-            stylist_bonus_settings[17])) &
+            star_lvl_3_thpc_min)) &
         (df_all_employees['Paid BB Percent'] > (
-            stylist_bonus_settings[18])) &
+            star_lvl_3_paid_bb_min)) &
         (df_all_employees['Clients Per Hour'] > (
-            stylist_bonus_settings[19]))] = (
-        stylist_bonus_settings[16])
+            star_lvl_3_clients_per_hour_min))] = star_lvl_3_multiplier
     df_all_employees['Star Bonus Multiplier'][
         (df_all_employees['Take Home Per Client'] > (
-            stylist_bonus_settings[21])) &
+            star_lvl_4_thpc_min)) &
         (df_all_employees['Paid BB Percent'] > (
-            stylist_bonus_settings[22])) &
+            star_lvl_4_paid_bb_min)) &
         (df_all_employees['Clients Per Hour'] > (
-            stylist_bonus_settings[23]))] = (
-        stylist_bonus_settings[20])
+            star_lvl_4_clients_per_hour_min))] = star_lvl_4_multiplier
     df_all_employees['Star Bonus'] = (
             df_all_employees['Star Bonus Multiplier'] *
             df_all_employees['Total Hours']).round(2)
@@ -251,14 +280,16 @@ def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
     # stylist take home sales bonus
     df_all_employees['Take Home Tier'] = np.where(
         df_all_employees['Take Home Sales'] <
-        stylist_bonus_settings[24], 0, np.where(
+        take_hm_bonus_lvl_1_sales_min, 0, np.where(
             df_all_employees['Take Home Sales'] >
-            stylist_bonus_settings[26],
-            stylist_bonus_settings[27],
-            stylist_bonus_settings[25]))
+            take_hm_bonus_lvl_2_sales_min,
+            take_hm_bonus_lvl_2_multiplier,
+            take_hm_bonus_lvl_1_multiplier))
     df_all_employees['Take Home Bonus'] = (
             df_all_employees['Take Home Tier'] * (
         df_all_employees['Take Home Sales']).round(2))
+    df_all_employees['Take Home Bonus'] = df_all_employees['Take Home Bonus'].round(2)
+    print(df_all_employees['Take Home Bonus'])
 
     df_all_employees = df_all_employees[
         ['Store', 'Employee', 'Pay Period', 'Hours1', 'Hours2',
@@ -325,10 +356,12 @@ def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
 
 def calculate_manager_bonuses(df_all_employees, man_name, df_store):
     # manager bonus settings
-    manager_service_breakpoint = 1870
-    manager_service_bonus_cap = 300
-    manager_service_bonus_paid_bb_min = 0.3
-    manager_service_bonus_thpc_min = 1.00
+    bonus_settings = PayrollSettings.objects.get(id=1)
+
+    manager_service_breakpoint = float(bonus_settings.manager_service_breakpoint)
+    manager_service_bonus_cap = float(bonus_settings.manager_service_bonus_cap)
+    manager_service_bonus_paid_bb_min = float(bonus_settings.manager_service_bonus_paid_bb_min)
+    manager_service_bonus_thpc_min = float(bonus_settings.manager_service_bonus_thpc_min)
 
     df_manager = df_all_employees[df_all_employees['Employee'].str.contains(man_name)]
     df_manager['Service Breakpoint'] = manager_service_breakpoint
@@ -500,6 +533,8 @@ def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
     one_on_one_sheet.merge_range('D57:E58', 'Date')
     one_on_one_sheet.merge_range('F57:I58', 'Managers Note')
 
+    store_total_format = workbook.add_format(
+        {'font_size': 40, 'bold': True})
     data_format1 = workbook.add_format(
         {'bg_color': '#ffffff'})
     data_format2 = workbook.add_format(
@@ -508,13 +543,13 @@ def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
         {'num_format': '$#,##0.00'})
     per_format = workbook.add_format(
         {'num_format': '0%'})
-    store_total_format = workbook.add_format(
-        {'font_size': 40, 'bold': True})
+
     payroll_sheet.conditional_format(
         "$A$1:$Q$%d" % number_rows,
         {"type": "formula",
          "criteria": '=INDIRECT("B"&ROW())="total salon"',
          "format": store_total_format})
+
     one_on_one_sheet.conditional_format(1, 3, row_len, 3, {
         'type': 'cell', 'criteria': 'less than',
         'value': 3400, 'format': dollar_format})
@@ -601,26 +636,8 @@ def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
     workbook.close()
 
 
-@login_required
-def check_uploaded_files(request):
-    current_user = str(request.user)
-    reports = ['/Stylist_Analysis.xls', '/Tips_By_Employee_Report.xls',
-               '/Employee_Hours1.xls', '/Employee_Hours2.xls',
-               '/SC_Client_Retention_Report.xls',
-               '/Employee_Service_Efficiency_SC.xls']
-    filenames = []
-    for report in reports:
-        filenames.append(
-            settings.MEDIA_ROOT + str(current_user) + str(report))
-    for file in filenames:
-        if not os.path.isfile(file):
-            return redirect('filename-error')
-    return filenames, current_user
-
-
-def run_payroll(request, man_name):
-    files, user = check_uploaded_files(request)
-    df_stylist_analysis, df_tips, df_hours1, df_hours2, df_retention, df_efficiency = read_excel_files(files)
+def run_payroll(user, man_name):
+    df_stylist_analysis, df_tips, df_hours1, df_hours2, df_retention, df_efficiency = read_excel_files()
     df_processed_sar, df_processed_sar_short = prepare_stylist_analysis(df_stylist_analysis)
     df_processed_all_employees = set_pay_period(df_tips, df_processed_sar_short)
     df_employees_and_hours = process_hours(df_hours1, df_hours2, df_processed_all_employees)

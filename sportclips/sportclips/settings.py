@@ -39,13 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # User installed apps
-    'memos.apps.MemosConfig',
     'users.apps.UsersConfig',
     'payroll.apps.PayrollConfig',
 
     # Third party apps
     'crispy_forms',
-    'django_cleanup.apps.CleanupConfig',
 ]
 
 MIDDLEWARE = [
