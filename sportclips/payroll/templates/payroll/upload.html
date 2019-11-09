@@ -2,24 +2,15 @@
 {% load crispy_forms_tags %}
 {% block content %}
 
-<!--Payroll Heading-->
-<article class="media content-section">
-    <div class="media-body">
-        <h6 class="application-heading">Upload Stylist Analysis Report</h6>
-        <div class="article-content">Please upload the Stylist Analysis Report below.
-        </div>
-    </div>
-</article>
-
-<!--Upload Section-->
-<article class="media content-section">
-    <div class="media-body">
+<div class="container">
+    <div class="content-section col-md-6">
+        <h4><strong>Upload reports</strong></h4>
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
             {{ upload_form|crispy }}
-            <button class="btn btn-primary" type="submit">Continue</button>
+            <button class="btn btn-danger btn-block" type="submit">Continue</button>
         </form>
     </div>
-</article>
+</div>
 
 {% endblock %}>

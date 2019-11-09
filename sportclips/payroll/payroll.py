@@ -1,9 +1,12 @@
-import numpy as np
-import pandas as pd
-
 from django.contrib.auth import settings
+from datetime import datetime
+from django.utils.dateformat import DateFormat
+from pytz import timezone
 
 from .models import PayrollSettings, Reports
+
+import numpy as np
+import pandas as pd
 
 
 def get_employee_names():
@@ -200,22 +203,22 @@ def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
     service_bonus_cap = float(bonus_settings.service_bonus_cap)
     service_bonus_take_home_sales_min = float(bonus_settings.service_bonus_take_home_sales_min)
     service_bonus_paid_bb_min = float(bonus_settings.service_bonus_paid_bb_min)
-    star_lvl_1_multiplier = float(bonus_settings.star_lvl_1_multiplier)
-    star_lvl_1_thpc_min = float(bonus_settings.star_lvl_1_thpc_min)
-    star_lvl_1_paid_bb_min = float(bonus_settings.star_lvl_1_paid_bb_min)
-    star_lvl_1_clients_per_hour_min = float(bonus_settings.star_lvl_1_clients_per_hour_min)
-    star_lvl_2_multiplier = float(bonus_settings.star_lvl_2_multiplier)
-    star_lvl_2_thpc_min = float(bonus_settings.star_lvl_2_thpc_min)
-    star_lvl_2_paid_bb_min = float(bonus_settings.star_lvl_2_paid_bb_min)
-    star_lvl_2_clients_per_hour_min = float(bonus_settings.star_lvl_2_clients_per_hour_min)
-    star_lvl_3_multiplier = float(bonus_settings.star_lvl_3_multiplier)
-    star_lvl_3_thpc_min = float(bonus_settings.star_lvl_3_thpc_min)
-    star_lvl_3_paid_bb_min = float(bonus_settings.star_lvl_3_paid_bb_min)
-    star_lvl_3_clients_per_hour_min = float(bonus_settings.star_lvl_3_clients_per_hour_min)
-    star_lvl_4_multiplier = float(bonus_settings.star_lvl_4_multiplier)
-    star_lvl_4_thpc_min = float(bonus_settings.star_lvl_4_thpc_min)
-    star_lvl_4_paid_bb_min = float(bonus_settings.star_lvl_4_paid_bb_min)
-    star_lvl_4_clients_per_hour_min = float(bonus_settings.star_lvl_4_clients_per_hour_min)
+    star_multiplier = float(bonus_settings.star_multiplier)
+    star_thpc_min = float(bonus_settings.star_thpc_min)
+    star_paid_bb_min = float(bonus_settings.star_paid_bb_min)
+    star_clients_per_hour_min = float(bonus_settings.star_clients_per_hour_min)
+    all_star_multiplier = float(bonus_settings.all_star_multiplier)
+    all_star_thpc_min = float(bonus_settings.all_star_thpc_min)
+    all_star_paid_bb_min = float(bonus_settings.all_star_paid_bb_min)
+    all_star_clients_per_hour_min = float(bonus_settings.all_star_clients_per_hour_min)
+    mvp_multiplier = float(bonus_settings.mvp_multiplier)
+    mvp_thpc_min = float(bonus_settings.mvp_thpc_min)
+    mvp_paid_bb_min = float(bonus_settings.mvp_paid_bb_min)
+    mvp_clients_per_hour_min = float(bonus_settings.mvp_clients_per_hour_min)
+    platinum_multiplier = float(bonus_settings.platinum_multiplier)
+    platinum_thpc_min = float(bonus_settings.platinum_thpc_min)
+    platinum_paid_bb_min = float(bonus_settings.platinum_paid_bb_min)
+    platinum_clients_per_hour_min = float(bonus_settings.platinum_clients_per_hour_min)
     take_hm_bonus_lvl_1_sales_min = float(bonus_settings.take_hm_bonus_lvl_1_sales_min)
     take_hm_bonus_lvl_1_multiplier = float(bonus_settings.take_hm_bonus_lvl_1_multiplier)
     take_hm_bonus_lvl_2_sales_min = float(bonus_settings.take_hm_bonus_lvl_2_sales_min)
@@ -247,32 +250,32 @@ def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
     df_all_employees['Star Bonus Multiplier'] = 0.00
     df_all_employees['Star Bonus Multiplier'][
         (df_all_employees['Take Home Per Client']
-         > star_lvl_1_thpc_min)
+         >= star_thpc_min)
         & (df_all_employees['Paid BB Percent']
-           > star_lvl_1_paid_bb_min)
+           >= star_paid_bb_min)
         & (df_all_employees['Clients Per Hour']
-           > star_lvl_1_clients_per_hour_min)] = star_lvl_1_multiplier
+           >= star_clients_per_hour_min)] = star_multiplier
     df_all_employees['Star Bonus Multiplier'][
-        (df_all_employees['Take Home Per Client'] > (
-            star_lvl_2_thpc_min)) &
-        (df_all_employees['Paid BB Percent'] > (
-            star_lvl_2_paid_bb_min)) &
+        (df_all_employees['Take Home Per Client']
+         >= all_star_thpc_min) &
+        (df_all_employees['Paid BB Percent']
+         >= all_star_paid_bb_min) &
         (df_all_employees['Clients Per Hour'] > (
-            star_lvl_2_clients_per_hour_min))] = star_lvl_2_multiplier
+            all_star_clients_per_hour_min))] = all_star_multiplier
     df_all_employees['Star Bonus Multiplier'][
-        (df_all_employees['Take Home Per Client'] > (
-            star_lvl_3_thpc_min)) &
-        (df_all_employees['Paid BB Percent'] > (
-            star_lvl_3_paid_bb_min)) &
-        (df_all_employees['Clients Per Hour'] > (
-            star_lvl_3_clients_per_hour_min))] = star_lvl_3_multiplier
+        (df_all_employees['Take Home Per Client'] >= (
+            mvp_thpc_min)) &
+        (df_all_employees['Paid BB Percent'] >= (
+            mvp_paid_bb_min)) &
+        (df_all_employees['Clients Per Hour'] >= (
+            mvp_clients_per_hour_min))] = mvp_multiplier
     df_all_employees['Star Bonus Multiplier'][
-        (df_all_employees['Take Home Per Client'] > (
-            star_lvl_4_thpc_min)) &
-        (df_all_employees['Paid BB Percent'] > (
-            star_lvl_4_paid_bb_min)) &
-        (df_all_employees['Clients Per Hour'] > (
-            star_lvl_4_clients_per_hour_min))] = star_lvl_4_multiplier
+        (df_all_employees['Take Home Per Client'] >= (
+            platinum_thpc_min)) &
+        (df_all_employees['Paid BB Percent'] >= (
+            platinum_paid_bb_min)) &
+        (df_all_employees['Clients Per Hour'] >= (
+            platinum_clients_per_hour_min))] = platinum_multiplier
     df_all_employees['Star Bonus'] = (
             df_all_employees['Star Bonus Multiplier'] *
             df_all_employees['Total Hours']).round(2)
@@ -289,7 +292,6 @@ def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
             df_all_employees['Take Home Tier'] * (
         df_all_employees['Take Home Sales']).round(2))
     df_all_employees['Take Home Bonus'] = df_all_employees['Take Home Bonus'].round(2)
-    print(df_all_employees['Take Home Bonus'])
 
     df_all_employees = df_all_employees[
         ['Store', 'Employee', 'Pay Period', 'Hours1', 'Hours2',
@@ -484,9 +486,11 @@ def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
     one_on_one = df_1on1_5.loc[0, 'Store'] + ' One-on-One'
 
     # Create a Pandas Excel writer using XlsxWriter as the engine.
-    writer = pd.ExcelWriter(
-        settings.MEDIA_ROOT + current_user + '/payroll.xlsx',
-        engine='xlsxwriter')
+    dt = datetime.now(timezone('US/Pacific'))
+    df = DateFormat(dt)
+    time = df.format('Y-m-d-h-i-s')
+    file_path = settings.MEDIA_ROOT + current_user + '/payroll-' + time + '.xlsx'
+    writer = pd.ExcelWriter(file_path, engine='xlsxwriter')
 
     # Convert the data-frame to an XlsxWriter Excel object.
     df_store.to_excel(writer, index=False, sheet_name=payroll)
@@ -575,7 +579,7 @@ def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
         'type': 'cell', 'criteria': 'less than',
         'value': 100, 'format': per_format})
 
-    for row in range(0, row_len + 1, 2):
+    for row in range(0, number_rows + 1, 2):
         payroll_sheet.set_row(row, cell_format=data_format1)
         payroll_sheet.set_row(row + 1, cell_format=data_format2)
         payroll_sheet.write(row, 0, None)
@@ -634,6 +638,7 @@ def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
 
     writer.save()
     workbook.close()
+    return file_path
 
 
 def run_payroll(user, man_name):
@@ -644,4 +649,5 @@ def run_payroll(user, man_name):
     df_employees_and_bonuses, df_store = calculate_stylist_bonuses(df_employees_and_hours, df_processed_sar)
     df_processed_store = calculate_manager_bonuses(df_employees_and_bonuses, man_name, df_store)
     df_processed_1on1, df_second_1on1 = process_one_on_one(df_employees_and_bonuses, df_retention, df_efficiency)
-    write_data_to_excel_file(df_processed_1on1, df_processed_store, df_second_1on1, user)
+    file_path = write_data_to_excel_file(df_processed_1on1, df_processed_store, df_second_1on1, user)
+    return file_path

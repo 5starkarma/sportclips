@@ -2,15 +2,12 @@
 {% load crispy_forms_tags %}
 {% block content %}
 
-<div class="content-section">
-    <div class="media">
-        <div class="media-body ">
-            <div style="text-align: center">
+<div class="container">
+    <div class="content-section col-md-6">
                 <p class="mb-4"></p>
-                <h5 class="account-heading mb-5">What would you like to do?</h5>
+        <h5 class="account-heading mb-5"><strong>Let's begin..</strong></h5>
                 <div class="form-group">
-                    <a class="btn btn-success btn-lg" href="{% url 'payroll' %}">Begin payroll</a>
-                    <a class="btn btn-primary btn-lg" href="{% url 'register' %}">Register as user</a>
+                    <a class="btn btn-danger btn-lg btn-block" href="{% url 'payroll' %}">Enter site</a>
                 </div>
             </div>
         </div>

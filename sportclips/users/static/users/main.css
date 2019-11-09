@@ -3,6 +3,8 @@ body {
   background-size: cover;
   color: #000000;
   margin-top: 5rem;
+  font-size: 14px;
+  font-weight: bold;
 }
 .h-primary {
     font-weight: 500;
@@ -22,7 +24,7 @@ ul {
 }
 .bg-steel {
   background-color: #0a0902;
-  border-bottom: 1px solid #666666;
+  border-bottom: 1px solid red;
 }
 .site-header .navbar-nav .nav-link {
   color: #cbd5db;

@@ -4,20 +4,17 @@
 
 <div class="container">
     <div class="content-section col-md-6">
-        <h4><strong>Log in</strong></h4>
-        <form method="POST">
+        <h4><strong>Payroll Settings</strong></h4>
+        <form enctype="multipart/form-data" method="POST">
             {% csrf_token %}
             <fieldset class="form-group">
                 {{ form|crispy }}
             </fieldset>
             <div class="form-group">
-                <button class="btn btn-danger btn-block mb-2" type="submit">Login</button>
-                <small class="text-muted ml-2">
-                    <a href="{% url 'password_reset' %}">Forgot Password?</a>
-                </small>
+                <button class="btn btn-danger btn-block" type="submit">Update Settings</button>
             </div>
         </form>
     </div>
 </div>
 
-{% endblock content %}
+{% endblock %}

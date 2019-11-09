@@ -1,30 +1,37 @@
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.messages.views import SuccessMessageMixin
 from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views import View
+from django.views.generic import ListView
 
 from .forms import UploadForm, ManagerForm, SettingsForm
-from .models import PayrollSettings, Reports
+from .models import PayrollSettings, Reports, Payroll
 from users.models import User
 from .payroll import run_payroll
 
 import pandas as pd
-import os
 
-pd.options.mode.chained_assignment = None  # default='warn'
-
-filenames = ['/Stylist_Analysis.xls', '/Tips_By_Employee_Report.xls',
-             '/Employee_Hours1.xls', '/Employee_Hours2.xls',
-             '/SC_Client_Retention_Report.xls',
-             '/Employee_Service_Efficiency_SC.xls', '/payroll.xlsx']
+pd.options.mode.chained_assignment = None
 
 
-def filename_error(request):
-    return render(request, 'payroll/filename-error.html')
+class PayrollListView(LoginRequiredMixin, ListView):
+    """ Display a list of user payroll reports. """
+
+    model = Payroll
+    template_name = 'payroll/payroll_reports.html'
+    context_object_name = 'payroll_reports'
+    ordering = '-date_time'
+
+    def get_queryset(self):
+        queryset = super(PayrollListView, self).get_queryset()
+        queryset = queryset.filter(user=self.request.user)
+        return queryset
 
 
 @login_required
@@ -37,23 +44,25 @@ def process_payroll(request):
         m_form = ManagerForm(
             request.POST, current_user_username=str(current_user))
         if m_form.is_valid():
-            # store_owner = User.objects.filter(groups__name='owner').last()
-            # owner_email = store_owner.email
-            # send_mail(
-            #     f'{current_user}: Payroll complete!',
-            #     f'{current_user} has completed payroll for your Sportclips store.',
-            #     'davidalford678@gmail.com',
-            #     [owner_email],
-            #     fail_silently=False,
-            # )
+
             manager_name = m_form.cleaned_data['manager']
-            run_payroll(str(current_user), manager_name)
-            file_path = (
-                    settings.MEDIA_ROOT + str(current_user) + '/payroll.xlsx')
-            if not os.path.isfile(file_path):
-                return redirect('filename-error')
-            response = HttpResponse(
-                open(file_path, 'rb').read())
+            file_path = run_payroll(str(current_user), manager_name)
+
+            static_removed_path = file_path.strip(settings.MEDIA_ROOT)
+
+            Payroll(user=current_user, file=static_removed_path).save()
+
+            store_owner = User.objects.filter(groups__name='owner').last()
+            owner_email = store_owner.email
+            send_mail(
+                f'{current_user}: Payroll complete!',
+                f'{current_user} has completed payroll for your Sportclips store.',
+                'davidalford678@gmail.com',
+                [owner_email],
+                fail_silently=False,
+            )
+
+            response = HttpResponse(open(file_path, 'rb').read())
             response['Content-Type'] = 'mimetype/submimetype'
             response['Content-Disposition'] = 'attachment; filename=payroll.xlsx'
             return response
@@ -62,21 +71,15 @@ def process_payroll(request):
 
 #
 @login_required
-def delete_old_files(request):
-    # Reports.objects.all().delete()
-    # current_user = str(request.user)
-    # for name in filenames:
-    #     name = settings.MEDIA_ROOT + current_user + name
-    #     if os.path.isfile(name):
-    #         os.remove(name)
-    #     else:
-    #         pass
+def payroll_preprocesses(request):
+    Reports.objects.filter(user=request.user).delete()
     return render(request, 'payroll/payroll.html')
 
 
-class FileUploadView(View):
+class FileUploadView(LoginRequiredMixin, SuccessMessageMixin, View):
     form_class = UploadForm
-    success_url = reverse_lazy('home')
+    success_message = 'You have uploaded the reports. Please select a manager.'
+    success_url = reverse_lazy('select_manager_run_payroll')
     template_name = 'upload.html'
 
     def get(self, request, *args, **kwargs):
@@ -97,6 +100,7 @@ class FileUploadView(View):
                 request, self.template_name, {'upload_form': upload_form})
 
 
+@login_required()
 def settings_view(request):
     payrollsettings = PayrollSettings.objects.get(id=1)
     if request.method == 'POST':
@@ -112,4 +116,4 @@ def settings_view(request):
     context = {
         'form': form,
     }
-    return render(request, 'payroll/settings.html', context)
+    return render(request, 'payroll/payroll_settings.html', context)

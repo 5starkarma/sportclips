@@ -1,11 +1,12 @@
 {% extends "users/base.html" %}
-{% load crispy_forms_tags %}
 {% block content %}
 
 <div class="container">
     <div class="content-section col-md-6">
-            <a class="btn btn-primary mt-4 btn-block" href="{% url 'upload' %}">Begin Payroll</a>
-        </div>
+        <h4><strong>What would you like to do?</strong></h4>
+        <a class="btn btn-danger mt-4 btn-block" href="{% url 'upload' %}">Begin payroll</a>
+        <a class="btn btn-secondary mt-4 btn-block" href="{% url 'payroll_reports' %}">View past payroll reports</a>
+        <a class="btn btn-secondary mt-4 btn-block" href="{% url 'settings' %}">Change payroll settings</a>
     </div>
 </div>
 
