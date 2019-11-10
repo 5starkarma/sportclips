@@ -38,15 +38,14 @@ class PayrollListView(LoginRequiredMixin, ListView):
 def process_payroll(request):
     current_user = request.user._wrapped if hasattr(
         request.user, '_wrapped') else request.user
-    m_form = ManagerForm(
-        request.POST, current_user_username=str(current_user))
+    m_form = ManagerForm(request.POST)
     if request.method == 'POST':
-        m_form = ManagerForm(
-            request.POST, current_user_username=str(current_user))
+        m_form = ManagerForm(request.POST)
         if m_form.is_valid():
 
             manager_name = m_form.cleaned_data['manager']
-            file_path = run_payroll(str(current_user), manager_name)
+
+            file_path = run_payroll(manager_name)
 
             static_removed_path = file_path.strip(settings.MEDIA_ROOT)
 

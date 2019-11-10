@@ -12,7 +12,7 @@ import pandas as pd
 def get_employee_names():
     df_names = pd.read_excel(
         Reports.objects.latest(
-            'tips_by_employee').tips_by_employee.url.strip("/"),
+            'tips_by_employee').tips_by_employee.path,
         sheet_name=0,
         header=None,
         skiprows=7)
@@ -26,27 +26,27 @@ def get_employee_names():
 def read_excel_files():
     df_stylist_analysis = pd.read_excel(
         Reports.objects.latest(
-            'stylist_analysis').stylist_analysis.url.strip("/"),
+            'stylist_analysis').stylist_analysis.path,
         sheet_name=0, header=None, skiprows=4)
     df_tips = pd.read_excel(
         Reports.objects.latest(
-            'tips_by_employee').tips_by_employee.url.strip("/"),
+            'tips_by_employee').tips_by_employee.path,
         sheet_name=0, header=None, skiprows=0)
     df_hours1 = pd.read_excel(
         Reports.objects.latest(
-            'hours_week_1').hours_week_1.url.strip("/"),
+            'hours_week_1').hours_week_1.path,
         header=None, skiprows=5)
     df_hours2 = pd.read_excel(
         Reports.objects.latest(
-            'hours_week_2').hours_week_2.url.strip("/"),
+            'hours_week_2').hours_week_2.path,
         header=None, skiprows=5)
     df_retention = pd.read_excel(
         Reports.objects.latest(
-            'client_retention').client_retention.url.strip("/"),
+            'client_retention').client_retention.path,
         sheet_name=0, header=None, skiprows=8)
     df_efficiency = pd.read_excel(
         Reports.objects.latest(
-            'employee_service_efficiency').employee_service_efficiency.url.strip("/"),
+            'employee_service_efficiency').employee_service_efficiency.path,
         sheet_name=0, header=None, skiprows=5)
     return df_stylist_analysis, df_tips, df_hours1, df_hours2, df_retention, df_efficiency
 
@@ -477,7 +477,7 @@ def process_one_on_one(df_all_employees, df_retention, df_efficiency):
     return df_1on1_5, df_1on1
 
 
-def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
+def write_data_to_excel_file(df_1on1_5, df_store, df_1on1):
     row_len = len(df_1on1_5.index)
     number_rows = len(df_store.index) + 1
 
@@ -489,7 +489,7 @@ def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
     dt = datetime.now(timezone('US/Pacific'))
     df = DateFormat(dt)
     time = df.format('Y-m-d-h-i-s')
-    file_path = settings.MEDIA_ROOT + current_user + '/payroll-' + time + '.xlsx'
+    file_path = settings.MEDIA_ROOT + '/payroll-' + time + '.xlsx'
     writer = pd.ExcelWriter(file_path, engine='xlsxwriter')
 
     # Convert the data-frame to an XlsxWriter Excel object.
@@ -641,7 +641,7 @@ def write_data_to_excel_file(df_1on1_5, df_store, df_1on1, current_user):
     return file_path
 
 
-def run_payroll(user, man_name):
+def run_payroll(man_name):
     df_stylist_analysis, df_tips, df_hours1, df_hours2, df_retention, df_efficiency = read_excel_files()
     df_processed_sar, df_processed_sar_short = prepare_stylist_analysis(df_stylist_analysis)
     df_processed_all_employees = set_pay_period(df_tips, df_processed_sar_short)
@@ -649,5 +649,5 @@ def run_payroll(user, man_name):
     df_employees_and_bonuses, df_store = calculate_stylist_bonuses(df_employees_and_hours, df_processed_sar)
     df_processed_store = calculate_manager_bonuses(df_employees_and_bonuses, man_name, df_store)
     df_processed_1on1, df_second_1on1 = process_one_on_one(df_employees_and_bonuses, df_retention, df_efficiency)
-    file_path = write_data_to_excel_file(df_processed_1on1, df_processed_store, df_second_1on1, user)
+    file_path = write_data_to_excel_file(df_processed_1on1, df_processed_store, df_second_1on1)
     return file_path
