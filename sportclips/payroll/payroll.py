@@ -239,12 +239,10 @@ def calculate_stylist_bonuses(df_all_employees, df_stylist_analysis):
         (df_all_employees['Service Bonus'])).round(2)
     df_all_employees['Service Bonus'] = np.where(
         (df_all_employees['Take Home Sales']) <
-        service_bonus_take_home_sales_min, 0,
-        (df_all_employees['Service Bonus'])).round(2)
-    df_all_employees['Service Bonus'] = np.where(
-        (df_all_employees['Paid BB Percent']) <
+        service_bonus_take_home_sales_min, 0, np.where(
+        df_all_employees['Paid BB Percent'] <
         service_bonus_paid_bb_min, 0,
-        (df_all_employees['Service Bonus'])).round(2)
+        df_all_employees['Service Bonus']).round(2))
 
     # stylist star bonus
     df_all_employees['Star Bonus Multiplier'] = 0.00
